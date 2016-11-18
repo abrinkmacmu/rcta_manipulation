@@ -3,6 +3,7 @@ src/*
 !src/roman_model
 !src/rcta_msgs
 !src/rcta
+!src/narms
 devel/*
 build/*
 install/*
