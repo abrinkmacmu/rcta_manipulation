@@ -21,6 +21,17 @@
 #include <tf_conversions/tf_eigen.h>
 #include <sensor_msgs/JointState.h>
 #include <visualization_msgs/Marker.h>
+#include <cmath>
+
+
+mt19937 mt(1337);
+
+void sample_from_gaussian(double mean, double variance)
+{
+	std::normal_distribution<double> distribution(mean,variance);
+
+	return distribution(mt);
+}
 
 geometry_msgs::Pose generatePose(double x, double y, double z, double roll, double pitch, double yaw)
 {
@@ -42,6 +53,38 @@ geometry_msgs::Pose generatePose(double x, double y, double z, double roll, doub
 	p.orientation.w = Q.w();
 	return p;
 }
+
+
+
+
+geometry_msgs::Pose sampleHandoff()
+{
+	
+	double robo1_reach_m =1.0;
+	double robo2_reach_m =1.0;
+
+	double base_distance_m =1.0;
+
+	double x_center_m = 0.0;
+	double y_center_m = 0.0;
+	double z_center_m = 0.0;
+
+	y_center_m = (std::pow(base_distance_m,2)-std::pow(robo2_reach_m,2)+std::pow(robo1_reach_m,2)*0.5)/base_distance_m;
+
+	double sampling_variance = (4*std::pow(base_distance_m,2)*std::pow(robo1_reach_m)- 
+		std::pow(std::pow(base_distance_m,2) 
+			- std::pow(robo2_reach_m,2) 
+			+std::pow(robo1_reach_m,2),2))/(4*std::pow(base_distance_m,2));
+
+	//Variance is the radius of the circle divided by three
+	sampling_variance=sampling_variance/3.0;
+
+	x_center_m = sample_from_gaussian(0.0,sampling_variance);
+	y_center_m = sample_from_gaussian(0.0,sampling_variance);
+	//return the generated pose
+	return generatePose(x_center_m, y_center_m, z_center_m, 0, 0, 0);
+}
+
 
 geometry_msgs::Pose generateRandomPose()
 {
@@ -141,12 +184,15 @@ int main(int argc, char*argv[]){
 	viz_marker.color.a = 1.0;
 	viz_marker.color.r = 1.0;
 
-	for (int i = 0; i < 100; i++)
+	bool handoff_sucess = false;
+
+	while(!handoff_sucess)
 	{
-		geometry_msgs::Pose pose = generateRandomPose();
+		// geometry_msgs::Pose pose = generateRandomPose();
 		//printPose(pose);
-		std::cout << i << "\n";
-		
+
+
+		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff();
 
 		pr2_js.header.stamp = ros::Time::now();
 		pr2_ik_request.pose_stamped.pose = pose;
