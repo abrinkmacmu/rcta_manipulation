@@ -25,6 +25,12 @@
 #include <sensor_msgs/JointState.h>
 #include <visualization_msgs/Marker.h>
 
+// system includes
+#include <actionlib/client/simple_action_client.h>
+
+// project includes
+#include <rcta/MoveArmAction.h>
+
 geometry_msgs::Pose generatePose(double x, double y, double z, double roll, double pitch, double yaw)
 {
 	Eigen::AngleAxisd Qroll, Qpitch, Qyaw;
@@ -107,7 +113,11 @@ geometry_msgs::Pose getRomanPoseOffset( const geometry_msgs::Pose& pose,
 
 	Eigen::Affine3d A_out;
 
-	A_out =  A_offset * A_pose;
+	/*
+	Pose Math source: 
+	http://tinyurl.com/h63ubdb
+	*/
+	A_out =  A_offset.inverse()* A_pose * A_offset;
 
 	outPose.position.x = A_out.translation()[0];
 	outPose.position.y = A_out.translation()[1];
@@ -119,8 +129,28 @@ geometry_msgs::Pose getRomanPoseOffset( const geometry_msgs::Pose& pose,
 	outPose.orientation.z = Q.z();
 	outPose.orientation.w = Q.w();
 
+	//std::cout << "A_offset: \n" << A_offset.matrix() << "\n";
+	//std::cout << "A_pose: \n" << A_pose.matrix() << "\n";
+	//std::cout << "A_out: \n" << A_out.matrix() << "\n";
+
+
+	//std::cout << "Input pose: \n";
+	//printPose(pose);
+	//std::cout << "Output pose: \n";
+	//printPose(outPose);
 	return outPose;
 
+}
+
+void result_callback(
+    const actionlib::SimpleClientGoalState& state,
+    const rcta::MoveArmResult::ConstPtr& result)
+{
+    if(result->success){
+        ROS_INFO("Planing was Successful!");
+    } else {
+        ROS_WARN("...");
+    }
 }
 
 
@@ -137,8 +167,6 @@ int main(int argc, char*argv[]){
 	listener.lookupTransform("world","map", ros::Time(0),roman_tf); 
 
 
-
-
 	ros::AsyncSpinner spinner(2);
 	spinner.start();
 	moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
@@ -149,8 +177,12 @@ int main(int argc, char*argv[]){
 	moveit::planning_interface::MoveGroup::Options opts("right_arm");
 	opts.robot_description_ = "roman/robot_description";
 	moveit::planning_interface::MoveGroup roman_move_group(opts);
-	std::cout << "Reference frame was: " <<roman_move_group.getPoseReferenceFrame() << "\n";
+	//std::cout << "Reference frame was: " <<roman_move_group.getPoseReferenceFrame() << "\n";
 	
+
+	// For whatever reason movegroup.execute does not move arm
+	// Try to use actionlib interface instead
+	actionlib::SimpleActionClient<rcta::MoveArmAction> *move_arm_client_;
 
 	moveit::planning_interface::MoveGroup::Plan roman_plan;
 	sensor_msgs::JointState roman_js;
@@ -192,21 +224,27 @@ int main(int argc, char*argv[]){
 
 	for (int i = 0; i < 100; i++)
 	{
-		geometry_msgs::Pose pose = generateRandomPose();
-		printPose(pose);
-		geometry_msgs::Pose roman_planning_pose = getRomanPoseOffset(pose, roman_tf);
-		printPose(roman_planning_pose);
 		std::cout << i << "\n";
 
-		tf::Transform tf1;
-	    tf1 = geoPose2Transform(pose);
-	    br.sendTransform(tf::StampedTransform(tf1, ros::Time::now(), "world", "pose"));
+		geometry_msgs::Pose pose = generateRandomPose();
+		
+		geometry_msgs::Pose roman_planning_pose = getRomanPoseOffset(pose, roman_tf);
+		
+
+		//tf::Transform tf1;
+	    //tf1 = geoPose2Transform(pose);
+	    //br.sendTransform(tf::StampedTransform(tf1, ros::Time::now(), "world", "pose"));
 
 	    tf::Transform tf2;
 	    tf2 = geoPose2Transform(roman_planning_pose);
 		br.sendTransform(tf::StampedTransform(tf2, ros::Time::now(), "map", "pose_map")); 
 		
+		// vizualize pose
+		viz_marker.pose = pose;
+		viz_marker.header.stamp = ros::Time::now();
+		ik_vis_pub.publish(viz_marker);
 
+		ros::Duration(.5).sleep();
 
 		roman_js.header.stamp = ros::Time::now();
 		roman_ik_request.pose_stamped.pose = pose;
@@ -219,19 +257,43 @@ int main(int argc, char*argv[]){
 			{
 				std::cout << "ROMAN can reach goal!\n";
 
+				/* 
+				I'm segfaulting :c
+				rcta::MoveArmGoal move_arm_goal;
+			    move_arm_goal.type = rcta::MoveArmGoal::EndEffectorGoal;
+			    move_arm_goal.goal_joint_state.name = roman_js.name;
+			    //include the attached object in the goal
+			    move_arm_goal.execute_path = true;
+			    move_arm_goal.goal_pose = roman_planning_pose;
+			    std::cout << "Good here\n";
+			    auto result_cb = boost::bind(result_callback, _1, _2);
+			    std::cout << "...aaand here\n";
+		        move_arm_client_->sendGoal(move_arm_goal, result_cb);
+		        std::cout << "...Last place\n";
+		        if (move_arm_client_->waitForResult()) {
+		            std::cout << "Success!\n";
+		        }else{
+		        	std::cout << "Failed :c\n";
+		        }
+				*/
+
 				// try to plan there now
+				
 				roman_move_group.setPlannerId("arastar");
 				roman_move_group.setWorkspace(-2,-2,-2,2,2,2);
 				roman_move_group.setPlanningTime(15); // sec
 				roman_move_group.setStartState(*roman_move_group.getCurrentState() );
 				roman_move_group.setPoseTarget(roman_planning_pose);
-				roman_move_group.setPoseReferenceFrame("world");
+				//roman_move_group.setPoseReferenceFrame("world");
 				bool suc = roman_move_group.plan(roman_plan);
 				if(suc)
 				{
-					std::cout << "Roman plan found, executing\n";
-					roman_move_group.execute(roman_plan);
+					std::cout << "Roman plan found, executing plan with " 
+						<< roman_plan.trajectory_.joint_trajectory.points.size() << "\n";
+					bool exeSuc = roman_move_group.execute(roman_plan);
+					std::cout << "Execution completed with success: " << exeSuc << "\n";
 				}
+				
 			}
 		}else{
 			std::cout << "Could not call ROMAN IK service\n";
@@ -239,12 +301,7 @@ int main(int argc, char*argv[]){
 
 
 
-		// vizualize pose
-		viz_marker.pose = pose;
-		viz_marker.header.stamp = ros::Time::now();
-		ik_vis_pub.publish(viz_marker);
-
-		ros::Duration(.5).sleep();
+		
 
 
 	}
