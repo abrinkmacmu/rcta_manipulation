@@ -17,6 +17,8 @@
 #include <moveit_msgs/GetPositionIK.h>
 
 #include <Eigen/Geometry>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
 #include <sensor_msgs/JointState.h>
@@ -66,10 +68,85 @@ void printPose(geometry_msgs::Pose p)
 
 }
 
+/** 
+ *  @brief geometry_msgs::Pose -> tf::Transform
+ */
+inline tf::Transform geoPose2Transform(geometry_msgs::Pose p)
+{
+    tf::Transform tf1;
+
+    tf1.setOrigin( tf::Vector3(
+        p.position.x, 
+        p.position.y, 
+        p.position.z) );
+
+    tf::Quaternion q(
+        p.orientation.x, 
+        p.orientation.y, 
+        p.orientation.z, 
+        p.orientation.w); 
+
+    tf1.setRotation(q);
+
+    return tf1;
+}
+
+geometry_msgs::Pose convertPoseViaTransform( const geometry_msgs::Pose& pose, 
+	const tf::StampedTransform& tf)
+{
+	geometry_msgs::Pose outPose;
+
+	Eigen::Affine3d A_offset;
+	tf::transformTFToEigen(tf, A_offset);
+
+	tf::Transform inputTf;
+	Eigen::Affine3d A_pose;
+	inputTf = geoPose2Transform(pose);
+	tf::transformTFToEigen(inputTf, A_pose);
+
+	Eigen::Affine3d A_out;
+
+	/*
+	Pose Math source: 
+	http://tinyurl.com/h63ubdb
+	*/
+	A_out =  A_offset.inverse()* A_pose * A_offset;
+
+	outPose.position.x = A_out.translation()[0];
+	outPose.position.y = A_out.translation()[1];
+	outPose.position.z = A_out.translation()[2];
+
+	Eigen::Quaterniond Q(A_out.linear());
+	outPose.orientation.x = Q.x();
+	outPose.orientation.y = Q.y();
+	outPose.orientation.z = Q.z();
+	outPose.orientation.w = Q.w();
+
+	//std::cout << "A_offset: \n" << A_offset.matrix() << "\n";
+	//std::cout << "A_pose: \n" << A_pose.matrix() << "\n";
+	//std::cout << "A_out: \n" << A_out.matrix() << "\n";
+
+
+	//std::cout << "Input pose: \n";
+	//printPose(pose);
+	//std::cout << "Output pose: \n";
+	//printPose(outPose);
+	return outPose;
+
+}
+
 
 int main(int argc, char*argv[]){
 	ros::init(argc, argv, "planning_test");
 	ros::NodeHandle nh;
+
+	tf::TransformBroadcaster br;
+	tf::TransformListener listener;
+
+	tf::StampedTransform pr2_tf;
+	ros::Duration(1.0).sleep(); // wait for tf listener to start up
+	listener.lookupTransform("pr2/r_shoulder_pan_link","world", ros::Time(0),pr2_tf);
+
 	ros::AsyncSpinner spinner(2);
 	spinner.start();
 	moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
@@ -78,7 +155,7 @@ int main(int argc, char*argv[]){
 	// PR2 Specific Messages
 	std::cout << "Creating PR2 movegroup interface\n";
 	moveit::planning_interface::MoveGroup::Options opts("right_arm");
-	opts.robot_description_ = "pr2/robot_description";
+	opts.robot_description_ = "robot_description";
 	moveit::planning_interface::MoveGroup pr2_move_group(opts);
 	moveit::planning_interface::MoveGroup::Plan pr2_plan;
 	sensor_msgs::JointState pr2_js;
@@ -120,9 +197,28 @@ int main(int argc, char*argv[]){
 
 	for (int i = 0; i < 100; i++)
 	{
-		geometry_msgs::Pose pose = generateRandomPose();
-		//printPose(pose);
 		std::cout << i << "\n";
+
+		geometry_msgs::Pose pose = generateRandomPose();
+
+		//geometry_msgs::Pose pr2_planning_pose = convertPoseViaTransform(pose, pr2_tf);
+		
+
+		tf::Transform tf1;
+	    tf1 = geoPose2Transform(pose);
+	    br.sendTransform(tf::StampedTransform(tf1, ros::Time::now(), "world", "pose"));
+
+	    //tf::Transform tf2;
+	    //tf2 = geoPose2Transform(pr2_planning_pose);
+		//br.sendTransform(tf::StampedTransform(tf2, ros::Time::now(), "pr2/r_shoulder_pan_link", "pose_map"));
+
+		// vizualize pose
+		viz_marker.pose = pose;
+		viz_marker.header.stamp = ros::Time::now();
+		ik_vis_pub.publish(viz_marker);
+
+		ros::Duration(.3).sleep();
+		
 		
 
 		pr2_js.header.stamp = ros::Time::now();
@@ -139,8 +235,9 @@ int main(int argc, char*argv[]){
 				pr2_move_group.setStartState(*pr2_move_group.getCurrentState() );
 				pr2_move_group.setPlannerId("RRTkConfigDefault");
 				pr2_move_group.setPlanningTime(10); // sec
-				//pr2_move_group.setPoseTarget(pose);
-				pr2_move_group.setPositionTarget(pose.position.x, pose.position.y, pose.position.z);
+				pr2_move_group.setPoseReferenceFrame("world");
+				pr2_move_group.setPoseTarget(pose);
+				//pr2_move_group.setPositionTarget(pose.position.x, pose.position.y, pose.position.z);
 				bool suc = pr2_move_group.plan(pr2_plan);
 				if(suc)
 				{
@@ -153,12 +250,7 @@ int main(int argc, char*argv[]){
 		}
 
 
-		// vizualize pose
-		viz_marker.pose = pose;
-		viz_marker.header.stamp = ros::Time::now();
-		ik_vis_pub.publish(viz_marker);
-
-		ros::Duration(.1).sleep();
+		
 
 
 	}
