@@ -258,6 +258,7 @@ int main(int argc, char*argv[])
 
 	bool handoff_sucess = false;
 	double sampling_variance_inflation_m = 0.0;
+	double sampling_variance_inflation_step_m = 0.01;
 
 
 	// geometry_msgs::PoseStamped pr2_pose = pr2_move_group.getCurrentPose();
@@ -291,12 +292,16 @@ int main(int argc, char*argv[])
 		pr2_ik_request.pose_stamped.pose = sampled_handoff_pose;
 		pr2_ik_request.pose_stamped.header.stamp = ros::Time::now();
 		pr2_ik_srv.request.ik_request = pr2_ik_request;
+
+		//Note whether both the robots were able to reach the sampled point
+		unsigned int robots_reached = 0;
 		if(pr2_compute_ik.call(pr2_ik_srv))
 		{
 			//std::cout << "Error code: " << pr2_ik_srv.response.error_code.val << "\n";
 			if(pr2_ik_srv.response.error_code.val == 1)
 			{
 				std::cout << "PR2 can reach goal!\n";
+				++robots_reached;
 			}
 		}else{
 			std::cout << "Could not call PR2 IK service\n";
@@ -312,6 +317,8 @@ int main(int argc, char*argv[])
 			if(roman_ik_srv.response.error_code.val == 1)
 			{
 				std::cout << "ROMAN can reach goal!\n";
+				++robots_reached;
+					
 			}
 		}
 		else
@@ -324,8 +331,10 @@ int main(int argc, char*argv[])
 			handoff_sucess=true;
 		}
 		else
-		{
-			sampling_variance_inflation_m+=0.01;
+		{	
+			//update the step based on how many robots were able to reach this point
+			sampling_variance_inflation_step_m*=(2-robots_reached);
+			sampling_variance_inflation_m+=sampling_variance_inflation_step_m;
 		}
 
 
