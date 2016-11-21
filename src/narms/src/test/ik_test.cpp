@@ -17,8 +17,11 @@
 #include <moveit_msgs/GetPositionIK.h>
 
 #include <Eigen/Geometry>
+#include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
+
+
 #include <sensor_msgs/JointState.h>
 #include <visualization_msgs/Marker.h>
 #include <cmath>
@@ -60,12 +63,13 @@ geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
 	double c_x2, double c_y2, double c_z2, double variance_inflation)
 {
 	
-	double robo1_reach_m =1.0;
-	double robo2_reach_m =1.0;
+	double robo1_reach_m =1.5;
+	double robo2_reach_m =1.5;
 
 	double x_center_m = 0.5*(c_x1 + c_x2);
 	double y_center_m = 0.5*(c_y1 + c_y2);
 	double z_center_m = 0.5*(c_z1 + c_z2);
+
 
 	// y_center_m = (std::pow(base_distance_m,2)-std::pow(robo2_reach_m,2)+std::pow(robo1_reach_m,2)*0.5)/base_distance_m;
 
@@ -82,11 +86,19 @@ geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
 	//Variance inflation is a number between [0,1], signifying how percentage inflated the sampling should be
 	sampling_variance = sampling_variance * (1+variance_inflation);
 
+	std::cout<<"\nSampling Variance :"<<sampling_variance<<std::endl;
+
 	x_center_m = sample_from_gaussian(x_center_m,sampling_variance);
 	y_center_m = sample_from_gaussian(y_center_m,sampling_variance);
 	z_center_m = sample_from_gaussian(z_center_m,sampling_variance);
+
+
+	double roll = 3.14*(std::rand() / double(RAND_MAX) -0.5);
+	double pitch = 3.14*(std::rand() / double(RAND_MAX) -0.5);
+	double yaw = 3.14*(std::rand() / double(RAND_MAX) -0.5);
+
 	//return the generated pose
-	return generatePose(x_center_m, y_center_m, z_center_m, 0, 0, 0);
+	return generatePose(x_center_m, y_center_m, z_center_m, yaw, pitch,roll);
 }
 
 
@@ -113,6 +125,59 @@ void printPose(geometry_msgs::Pose p)
 
 }
 
+/** 
+ *  @brief geometry_msgs::Pose -> tf::Transform
+ */
+inline tf::Transform geoPose2Transform(geometry_msgs::Pose p)
+{
+    tf::Transform tf1;
+
+    tf1.setOrigin( tf::Vector3(
+        p.position.x, 
+        p.position.y, 
+        p.position.z) );
+
+    tf::Quaternion q(
+        p.orientation.x, 
+        p.orientation.y, 
+        p.orientation.z, 
+        p.orientation.w); 
+
+    tf1.setRotation(q);
+
+    return tf1;
+}
+
+void transformPose( geometry_msgs::Pose& pose, 
+	const tf::StampedTransform& tf)
+{
+	geometry_msgs::Pose outPose;
+
+	Eigen::Affine3d A_offset;
+	tf::transformTFToEigen(tf, A_offset);
+
+	tf::Transform inputTf;
+	Eigen::Affine3d A_pose;
+	inputTf = geoPose2Transform(pose);
+	tf::transformTFToEigen(inputTf, A_pose);
+
+	Eigen::Affine3d A_out;
+
+	A_out =  A_offset * A_pose;
+
+	pose.position.x = A_out.translation()[0];
+	pose.position.y = A_out.translation()[1];
+	pose.position.z = A_out.translation()[2];
+
+	Eigen::Quaterniond Q(A_out.linear());
+	pose.orientation.x = Q.x();
+	pose.orientation.y = Q.y();
+	pose.orientation.z = Q.z();
+	pose.orientation.w = Q.w();
+
+}
+
+
 
 int main(int argc, char*argv[])
 {
@@ -123,7 +188,7 @@ int main(int argc, char*argv[])
 
 	// PR2 Specific Messages
 	std::string pr2_planning_group("right_arm_and_torso");
-	moveit::planning_interface::MoveGroup pr2_move_group(pr2_planning_group);
+	// moveit::planning_interface::MoveGroup pr2_move_group(pr2_planning_group);
 	moveit::planning_interface::MoveGroup::Plan pr2_plan;
 	sensor_msgs::JointState pr2_js;
 	moveit_msgs::PositionIKRequest pr2_ik_request;
@@ -133,7 +198,7 @@ int main(int argc, char*argv[])
 	
 	// Roman Specific Messages
 	std::string roman_planning_group("right_arm");
-	moveit::planning_interface::MoveGroup roman_move_group(roman_planning_group);
+	// moveit::planning_interface::MoveGroup roman_move_group(roman_planning_group);
 	moveit::planning_interface::MoveGroup::Plan roman_plan;
 	sensor_msgs::JointState roman_js;
 	moveit_msgs::PositionIKRequest roman_ik_request;
@@ -152,7 +217,7 @@ int main(int argc, char*argv[])
 	pr2_js.position = {0,0,0,0,0,0,0};
 	pr2_js.velocity = {0,0,0,0,0,0,0};
 
-	pr2_move_group.setJointValueTarget(pr2_js);
+	// pr2_move_group.setJointValueTarget(pr2_js);
 	pr2_ik_request.group_name = pr2_planning_group;
 	pr2_ik_request.avoid_collisions = true; // <-- if true, should not need to call validity checker
 	pr2_ik_request.pose_stamped.header.frame_id = std::string("world");
@@ -170,7 +235,7 @@ int main(int argc, char*argv[])
 	roman_js.position = {0,0,0,0,0,0,0};
 	roman_js.velocity = {0,0,0,0,0,0,0};
 
-	roman_move_group.setJointValueTarget(roman_js);
+	// roman_move_group.setJointValueTarget(roman_js);
 	roman_ik_request.group_name = roman_planning_group;
 	roman_ik_request.avoid_collisions = true; // <-- if true, should not need to call validity checker
 	roman_ik_request.pose_stamped.header.frame_id = std::string("world");
@@ -195,18 +260,33 @@ int main(int argc, char*argv[])
 	double sampling_variance_inflation_m = 0.0;
 
 
-	geometry_msgs::PoseStamped pr2_pose = pr2_move_group.getCurrentPose();
-	geometry_msgs::PoseStamped roman_pose = roman_move_group.getCurrentPose();
+	// geometry_msgs::PoseStamped pr2_pose = pr2_move_group.getCurrentPose();
+	// geometry_msgs::PoseStamped roman_pose = roman_move_group.getCurrentPose();
+
+	tf::TransformListener listener;
+	tf::StampedTransform roman_tf;
+	tf::StampedTransform pr2_tf;
+	ros::Duration(1.0).sleep(); // wait for tf listener to start up
+	listener.lookupTransform("world","limb_right_link0", ros::Time(0),roman_tf); 
+	listener.lookupTransform("world","pr2/r_shoulder_pan_link", ros::Time(0),pr2_tf); 
+
+
+	geometry_msgs::Pose pr2_pose; 
+	transformPose(pr2_pose,pr2_tf);
+
+
+	geometry_msgs::Pose roman_pose; 
+	transformPose(roman_pose,roman_tf);
+
 	while(!handoff_sucess)
 	{
-		// geometry_msgs::Pose pose = generateRandomPose();
+		// geometry_msgs::Pose sampled_handoff_pose = generateRandomPose();
 		//printPose(pose);
 
-		std::cout<<"\nSampled a point";
-		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff(pr2_pose.pose.position.x,pr2_pose.pose.position.y,pr2_pose.pose.position.z,
-																roman_pose.pose.position.x,roman_pose.pose.position.y,roman_pose.pose.position.z,
+		std::cout<<"\nSampled a point\n";
+		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff(pr2_pose.position.x,pr2_pose.position.y,pr2_pose.position.z,roman_pose.position.x,roman_pose.position.y,roman_pose.position.z,
 																sampling_variance_inflation_m);
-
+		std::cout<<sampled_handoff_pose.position.x<<" "<<sampled_handoff_pose.position.y<<" "<<sampled_handoff_pose.position.z;
 		pr2_js.header.stamp = ros::Time::now();
 		pr2_ik_request.pose_stamped.pose = sampled_handoff_pose;
 		pr2_ik_request.pose_stamped.header.stamp = ros::Time::now();
@@ -245,7 +325,7 @@ int main(int argc, char*argv[])
 		}
 		else
 		{
-			sampling_variance_inflation_m+=0.1;
+			sampling_variance_inflation_m+=0.01;
 		}
 
 
