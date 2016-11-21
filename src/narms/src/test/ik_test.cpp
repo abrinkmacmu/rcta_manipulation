@@ -36,11 +36,11 @@ void sample_from_gaussian(double mean, double variance)
 geometry_msgs::Pose generatePose(double x, double y, double z, double roll, double pitch, double yaw)
 {
 	Eigen::AngleAxisd Qroll, Qpitch, Qyaw;
-    Qroll = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
-    Qpitch = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
-    Qyaw = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
+	Qroll = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+	Qpitch = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
+	Qyaw = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
 
-    Eigen::Quaterniond Q;
+	Eigen::Quaterniond Q;
 	Q =  Qroll * Qpitch * Qyaw ;
 
 	geometry_msgs::Pose p;
@@ -57,30 +57,35 @@ geometry_msgs::Pose generatePose(double x, double y, double z, double roll, doub
 
 
 
-geometry_msgs::Pose sampleHandoff()
+geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
+	double c_x2, double c_y2, double c_y3, double variance_inflation)
 {
 	
 	double robo1_reach_m =1.0;
 	double robo2_reach_m =1.0;
 
-	double base_distance_m =1.0;
+	double x_center_m = 0.5*(c_x1 + c_x2);
+	double y_center_m = 0.5*(c_y1 + c_y2);
+	double z_center_m = 0.5*(c_z1 + c_z2);
 
-	double x_center_m = 0.0;
-	double y_center_m = 0.0;
-	double z_center_m = 0.0;
+	// y_center_m = (std::pow(base_distance_m,2)-std::pow(robo2_reach_m,2)+std::pow(robo1_reach_m,2)*0.5)/base_distance_m;
 
-	y_center_m = (std::pow(base_distance_m,2)-std::pow(robo2_reach_m,2)+std::pow(robo1_reach_m,2)*0.5)/base_distance_m;
+	// double sampling_variance = (4*std::pow(base_distance_m,2)*std::pow(robo1_reach_m)- 
+	// 	std::pow(std::pow(base_distance_m,2) 
+	// 		- std::pow(robo2_reach_m,2) 
+	// 		+std::pow(robo1_reach_m,2),2))/(4*std::pow(base_distance_m,2));
 
-	double sampling_variance = (4*std::pow(base_distance_m,2)*std::pow(robo1_reach_m)- 
-		std::pow(std::pow(base_distance_m,2) 
-			- std::pow(robo2_reach_m,2) 
-			+std::pow(robo1_reach_m,2),2))/(4*std::pow(base_distance_m,2));
+	// //Variance is the radius of the circle divided by three
+	// sampling_variance=sampling_variance/3.0;
 
-	//Variance is the radius of the circle divided by three
-	sampling_variance=sampling_variance/3.0;
+	sampling_variance = std::hypot((c_x1-c_x2),(c_y1-c_y2),(c_z1-c_z2))/3.0;
 
-	x_center_m = sample_from_gaussian(0.0,sampling_variance);
-	y_center_m = sample_from_gaussian(0.0,sampling_variance);
+	//Variance inflation is a number between [0,1], signifying how percentage inflated the sampling should be
+	sampling_variance = sampling_variance * (variance_inflation);
+
+	x_center_m = sample_from_gaussian(x_center_m,sampling_variance);
+	y_center_m = sample_from_gaussian(y_center_m,sampling_variance);
+	z_center_m = sample_from_gaussian(z_center_m,sampling_variance);
 	//return the generated pose
 	return generatePose(x_center_m, y_center_m, z_center_m, 0, 0, 0);
 }
@@ -100,12 +105,12 @@ geometry_msgs::Pose generateRandomPose()
 void printPose(geometry_msgs::Pose p)
 {
 	std::cout << "pos(" << p.position.x <<
-				 ", "<< p.position.y <<
-				 ", "<< p.position.z <<
-				 ")   q[" << p.orientation.x <<
-				 ", "<< p.orientation.y <<
-				 ", "<< p.orientation.z <<
-				 ", "<< p.orientation.w << "]\n";
+	", "<< p.position.y <<
+	", "<< p.position.z <<
+	")   q[" << p.orientation.x <<
+	", "<< p.orientation.y <<
+	", "<< p.orientation.z <<
+	", "<< p.orientation.w << "]\n";
 
 }
 
@@ -118,7 +123,7 @@ int main(int argc, char*argv[]){
 
 	// PR2 Specific Messages
 	std::string pr2_planning_group("right_arm_and_torso");
-	//moveit::planning_interface::MoveGroup pr2_move_group(pr2_planning_group);
+	moveit::planning_interface::MoveGroup pr2_move_group(pr2_planning_group);
 	moveit::planning_interface::MoveGroup::Plan pr2_plan;
 	sensor_msgs::JointState pr2_js;
 	moveit_msgs::PositionIKRequest pr2_ik_request;
@@ -128,7 +133,7 @@ int main(int argc, char*argv[]){
 	
 	// Roman Specific Messages
 	std::string roman_planning_group("right_arm");
-	//moveit::planning_interface::MoveGroup pr2_move_group(pr2_planning_group);
+	moveit::planning_interface::MoveGroup pr2_move_group(pr2_planning_group);
 	moveit::planning_interface::MoveGroup::Plan roman_plan;
 	sensor_msgs::JointState roman_js;
 	moveit_msgs::PositionIKRequest roman_ik_request;
@@ -138,15 +143,16 @@ int main(int argc, char*argv[]){
 
 	// build ik service messages for PR2***************************
 	pr2_js.name = {"r_shoulder_pan_joint",
-			   "r_shoulder_lift_joint",
-			   "r_upper_arm_roll_joint",
-			   "r_elbow_flex_joint",
-			   "r_forearm_roll_joint",
-			   "r_wrist_flex_joint",
-			   "r_wrist_roll_joint"};	
+	"r_shoulder_lift_joint",
+	"r_upper_arm_roll_joint",
+	"r_elbow_flex_joint",
+	"r_forearm_roll_joint",
+	"r_wrist_flex_joint",
+	"r_wrist_roll_joint"};	
 	pr2_js.position = {0,0,0,0,0,0,0};
 	pr2_js.velocity = {0,0,0,0,0,0,0};
 
+	pr2_move_group.setJointValueTarget(pr2_js);
 	pr2_ik_request.group_name = pr2_planning_group;
 	pr2_ik_request.avoid_collisions = true; // <-- if true, should not need to call validity checker
 	pr2_ik_request.pose_stamped.header.frame_id = std::string("world");
@@ -155,15 +161,16 @@ int main(int argc, char*argv[]){
 
 	// Build ik service message header for ROMAN****************************
 	roman_js.name={"limb_right_joint1",
-				   "limb_right_joint2",
-				   "limb_right_joint3",
-				   "limb_right_joint4",
-				   "limb_right_joint5",
-				   "limb_right_joint6",
-				   "limb_right_joint7"};
+	"limb_right_joint2",
+	"limb_right_joint3",
+	"limb_right_joint4",
+	"limb_right_joint5",
+	"limb_right_joint6",
+	"limb_right_joint7"};
 	roman_js.position = {0,0,0,0,0,0,0};
 	roman_js.velocity = {0,0,0,0,0,0,0};
 
+	roman_move_group.setJointValueTarget(roman_js);
 	roman_ik_request.group_name = roman_planning_group;
 	roman_ik_request.avoid_collisions = true; // <-- if true, should not need to call validity checker
 	roman_ik_request.pose_stamped.header.frame_id = std::string("world");
@@ -185,17 +192,22 @@ int main(int argc, char*argv[]){
 	viz_marker.color.r = 1.0;
 
 	bool handoff_sucess = false;
+	double sampling_variance_inflation_m = 0.0;
 
+
+	geometry_msgs::PoseStamped pr2_pose = pr2_move_group.getCurrentPose();
+	geometry_msgs::PoseStamped roman_pose = roman_move_group.getCurrentPose();
 	while(!handoff_sucess)
 	{
 		// geometry_msgs::Pose pose = generateRandomPose();
 		//printPose(pose);
 
 
-		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff();
+		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff(pr2_pose.x,pr2_pose.y,pr2_pose.z,
+																roman_pose.x,roman_pose.y,roman_pose.z);
 
 		pr2_js.header.stamp = ros::Time::now();
-		pr2_ik_request.pose_stamped.pose = pose;
+		pr2_ik_request.pose_stamped.pose = sampled_handoff_pose;
 		pr2_ik_request.pose_stamped.header.stamp = ros::Time::now();
 		pr2_ik_srv.request.ik_request = pr2_ik_request;
 		if(pr2_compute_ik.call(pr2_ik_srv))
@@ -210,7 +222,7 @@ int main(int argc, char*argv[]){
 		}
 
 		roman_js.header.stamp = ros::Time::now();
-		roman_ik_request.pose_stamped.pose = pose;
+		roman_ik_request.pose_stamped.pose = sampled_handoff_pose;
 		roman_ik_request.pose_stamped.header.stamp = ros::Time::now();
 		roman_ik_srv.request.ik_request = roman_ik_request;
 		if(roman_compute_ik.call(roman_ik_srv))
@@ -220,8 +232,19 @@ int main(int argc, char*argv[]){
 			{
 				std::cout << "ROMAN can reach goal!\n";
 			}
-		}else{
+		}
+		else
+		{
 			std::cout << "Could not call ROMAN IK service\n";
+		}
+
+		if(pr2_ik_srv.response.error_code.val == 1 && roman_ik_srv.response.error_code.val == 1)
+		{
+			handoff_sucess=true;
+		}
+		else
+		{
+			sampling_variance_inflation_m+=0.1;
 		}
 
 
@@ -232,11 +255,13 @@ int main(int argc, char*argv[]){
 		ik_vis_pub.publish(viz_marker);
 
 		ros::Duration(.1).sleep();
-
-
 	}
+}
+
+
+}
 
 
 
-	return 0;
+return 0;
 }
