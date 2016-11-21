@@ -37,6 +37,7 @@ find_package(catkin REQUIRED COMPONENTS
 ###########
 
 include_directories(include)
+include_directories(include/narms)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )

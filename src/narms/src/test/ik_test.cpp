@@ -22,16 +22,15 @@
 #include <sensor_msgs/JointState.h>
 #include <visualization_msgs/Marker.h>
 #include <cmath>
+#include <random>
 
+std::mt19937 mt(1729);
 
-mt19937 mt(1337);
-
-void sample_from_gaussian(double mean, double variance)
-{
-	std::normal_distribution<double> distribution(mean,variance);
-
-	return distribution(mt);
-}
+double sample_from_gaussian(double mean, double variance)
+	{
+		std::normal_distribution<double> gauss(mean,variance);
+		return gauss(mt);
+	}
 
 geometry_msgs::Pose generatePose(double x, double y, double z, double roll, double pitch, double yaw)
 {
@@ -58,7 +57,7 @@ geometry_msgs::Pose generatePose(double x, double y, double z, double roll, doub
 
 
 geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
-	double c_x2, double c_y2, double c_y3, double variance_inflation)
+	double c_x2, double c_y2, double c_z2, double variance_inflation)
 {
 	
 	double robo1_reach_m =1.0;
@@ -78,10 +77,10 @@ geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
 	// //Variance is the radius of the circle divided by three
 	// sampling_variance=sampling_variance/3.0;
 
-	sampling_variance = std::hypot((c_x1-c_x2),(c_y1-c_y2),(c_z1-c_z2))/3.0;
+	double sampling_variance = std::sqrt(std::pow(c_x1-c_x2,2)+std::pow(c_y1-c_y2,2)+std::pow(c_z1-c_z2,2))/3.0;
 
 	//Variance inflation is a number between [0,1], signifying how percentage inflated the sampling should be
-	sampling_variance = sampling_variance * (variance_inflation);
+	sampling_variance = sampling_variance * (1+variance_inflation);
 
 	x_center_m = sample_from_gaussian(x_center_m,sampling_variance);
 	y_center_m = sample_from_gaussian(y_center_m,sampling_variance);
@@ -115,7 +114,8 @@ void printPose(geometry_msgs::Pose p)
 }
 
 
-int main(int argc, char*argv[]){
+int main(int argc, char*argv[])
+{
 	ros::init(argc, argv, "ik_test");
 	ros::NodeHandle nh;
 	moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
@@ -133,7 +133,7 @@ int main(int argc, char*argv[]){
 	
 	// Roman Specific Messages
 	std::string roman_planning_group("right_arm");
-	moveit::planning_interface::MoveGroup pr2_move_group(pr2_planning_group);
+	moveit::planning_interface::MoveGroup roman_move_group(roman_planning_group);
 	moveit::planning_interface::MoveGroup::Plan roman_plan;
 	sensor_msgs::JointState roman_js;
 	moveit_msgs::PositionIKRequest roman_ik_request;
@@ -202,9 +202,10 @@ int main(int argc, char*argv[]){
 		// geometry_msgs::Pose pose = generateRandomPose();
 		//printPose(pose);
 
-
-		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff(pr2_pose.x,pr2_pose.y,pr2_pose.z,
-																roman_pose.x,roman_pose.y,roman_pose.z);
+		std::cout<<"\nSampled a point";
+		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff(pr2_pose.pose.position.x,pr2_pose.pose.position.y,pr2_pose.pose.position.z,
+																roman_pose.pose.position.x,roman_pose.pose.position.y,roman_pose.pose.position.z,
+																sampling_variance_inflation_m);
 
 		pr2_js.header.stamp = ros::Time::now();
 		pr2_ik_request.pose_stamped.pose = sampled_handoff_pose;
@@ -250,18 +251,12 @@ int main(int argc, char*argv[]){
 
 
 		// vizualize pose
-		viz_marker.pose = pose;
+		viz_marker.pose = sampled_handoff_pose;
 		viz_marker.header.stamp = ros::Time::now();
 		ik_vis_pub.publish(viz_marker);
 
 		ros::Duration(.1).sleep();
 	}
-}
-
-
-}
-
-
 
 return 0;
 }
