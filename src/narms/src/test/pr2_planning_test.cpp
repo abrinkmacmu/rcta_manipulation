@@ -177,6 +177,7 @@ int main(int argc, char*argv[]){
 
 	pr2_ik_request.group_name = std::string("right_arm");
 	pr2_ik_request.avoid_collisions = true; // <-- if true, should not need to call validity checker
+	//pr2_ik_request.ik_link_name = "r_wrist_roll_link";
 	pr2_ik_request.pose_stamped.header.frame_id = std::string("world");
 	pr2_ik_request.robot_state.joint_state = pr2_js;
 	pr2_ik_request.attempts = 10;
@@ -235,7 +236,7 @@ int main(int argc, char*argv[]){
 				pr2_move_group.setStartState(*pr2_move_group.getCurrentState() );
 				pr2_move_group.setPlannerId("RRTkConfigDefault");
 				pr2_move_group.setPlanningTime(10); // sec
-				pr2_move_group.setPoseReferenceFrame("world");
+				//pr2_move_group.setPoseReferenceFrame("world");
 				pr2_move_group.setPoseTarget(pose);
 				//pr2_move_group.setPositionTarget(pose.position.x, pose.position.y, pose.position.z);
 				bool suc = pr2_move_group.plan(pr2_plan);

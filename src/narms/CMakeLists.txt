@@ -25,11 +25,24 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   tf
   tf_conversions
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
+
+add_service_files(
+  FILES
+  target_pose.srv
+)
+
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+    geometry_msgs
+    sensor_msgs
+)
 
 
 ###########
@@ -50,7 +63,7 @@ include_directories(
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(narms ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 
 
 add_executable(ik_test src/test/ik_test.cpp)
@@ -72,3 +85,28 @@ add_executable(roman_planning_test src/test/roman_planning_test.cpp)
 target_link_libraries(roman_planning_test 
   ${catkin_LIBRARIES}
 )
+
+add_executable(move_pr2_server 
+  src/move_pr2_server.cpp
+  utils/narms_utils.cpp
+  )
+target_link_libraries(move_pr2_server 
+  ${catkin_LIBRARIES}
+)
+add_dependencies(move_pr2_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(sampling_planner 
+  src/sampling_planner.cpp
+  )
+target_link_libraries(sampling_planner 
+  ${catkin_LIBRARIES}
+)
+add_dependencies(sampling_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(pr2_full_test 
+  src/test/pr2_full_test.cpp
+  )
+target_link_libraries(pr2_full_test 
+  ${catkin_LIBRARIES}
+)
+add_dependencies(pr2_full_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
