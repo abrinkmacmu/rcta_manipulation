@@ -3,21 +3,31 @@
     <arg name="fake" default="false"/>
     <arg name="ns" default="false"/>
 
+    <arg if="$(arg ns)"     name="abs_nwu_frame" value="roman/abs_nwu"/>
+    <arg if="$(arg ns)"     name="map_frame" value="roman/map"/>
+    <arg if="$(arg ns)"     name="odom_combined_frame" value="roman/odom_combined"/>
+    <arg if="$(arg ns)"     name="base_footprint_frame" value="roman/base_footprint"/>
+    <arg unless="$(arg ns)" name="abs_nwu_frame" value="abs_nwu"/>
+    <arg unless="$(arg ns)" name="map_frame" value="map"/>
+    <arg unless="$(arg ns)" name="odom_combined_frame" value="odom_combined"/>
+    <arg unless="$(arg ns)" name="base_footprint_frame" value="base_footprint"/>
+
     <group if="$(arg live)">
-        <node name="abs_nwu_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 abs_nwu map 50"/>
+        <node name="abs_nwu_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 $(arg abs_nwu_frame) $(arg map_frame) 50"/>
         <group if="$(arg fake)">
-            <node name="map_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 abs_nwu base_footprint 100"/>
+            <node name="map_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 $(arg abs_nwu_frame) $(arg base_footprint_frame) 100"/>
         </group>
     </group>
     <group unless="$(arg live)">
-        <!-- to be removed: here solely to be able to use bag files with data stamped with the abs_nwu frame -->
-        <node name="abs_nwu_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 abs_nwu map 50"/>
+        <!-- to be removed: here solely to be able to use bag files with data stamped with the $(arg abs_nwu_frame) frame -->
+        <node name="abs_nwu_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 $(arg abs_nwu_frame) $(arg map_frame) 50"/>
 
         <group if="$(arg fake)">
             <!-- fake localization -->
-            <node name="map_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 map odom_combined 100"/>
+            <node name="map_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 $(arg map_frame) $(arg odom_combined_frame) 100"/>
         </group>
         <group unless="$(arg fake)">
+            <!-- TODO: likely tf issues with namespacing within here -->
             <node name="hector_mapping" pkg="hector_mapping" type="hector_mapping">
                 <rosparam command="load" file="$(find rcta)/config/localization/hector_mapping.yaml"/>
                 <remap from="scan" to="base_scan"/>

@@ -1,5 +1,4 @@
 <launch>
-	<group ns="roman">
     <arg name="live" default="true"/>
     <arg name="fake" default="false"/>
 
@@ -11,5 +10,4 @@
     <node name="move_arm_node" pkg="rcta" type="move_arm_node" output="screen">
         <rosparam command="load" file="$(find rcta)/config/planning/move_arm_node.yaml"/>
     </node>
-    </group>
 </launch>

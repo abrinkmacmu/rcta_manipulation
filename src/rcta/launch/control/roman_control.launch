@@ -1,8 +1,12 @@
 <launch>
     <arg name="live" default="true"/>
     <arg name="fake" default="false"/>
-
     <arg name="ns" default="false"/>
+
+    <arg if="$(arg ns)"     name="odom_combined_frame" value="roman/odom_combined"/>
+    <arg if="$(arg ns)"     name="base_footprint_frame" value="roman/base_footprint"/>
+    <arg unless="$(arg ns)" name="odom_combined_frame" value="odom_combined"/>
+    <arg unless="$(arg ns)" name="base_footprint_frame" value="base_footprint"/>
 
     <!-- start pose for the robot in gazebo -->
     <arg name="start_x" default="-3.55"/>
@@ -25,11 +29,11 @@
     <!-- publish fake odometry in all modes except live/real -->
     <group if="$(arg live)">
         <group if="$(arg fake)">
-            <node name="odom_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 odom_combined base_footprint 100"/>
+            <node name="odom_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 $(arg odom_combined_frame) $(arg base_footprint_frame) 100"/>
         </group>
     </group>
     <group unless="$(arg live)">
-        <node name="odom_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 odom_combined base_footprint 100"/>
+        <node name="odom_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 $(arg odom_combined_frame) $(arg base_footprint_frame) 100"/>
     </group>
 
     <group if="$(arg live)">
@@ -54,7 +58,7 @@
         <group if="$(arg fake)">
             <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
                 <param name="use_gui" value="false"/>
-                <rosparam param="source_list">[/move_group/fake_controller_joint_states]</rosparam>
+                <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
             </node>
 
             <!-- dummy to keep move_group from hanging -->

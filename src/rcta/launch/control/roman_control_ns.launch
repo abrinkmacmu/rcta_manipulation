@@ -1,0 +1,14 @@
+<launch>
+    <arg name="live" default="true"/>
+    <arg name="fake" default="false"/>
+    <arg name="ns" default="false"/>
+
+	<group ns="roman">
+		<param name="tf_prefix" value="roman"/>
+		<include file="$(find rcta)/launch/control/roman_control.launch">
+			<arg name="live" value="$(arg live)"/>
+			<arg name="fake" value="$(arg fake)"/>
+			<arg name="ns" value="$(arg ns)"/>
+		</include>
+	</group>
+</launch>

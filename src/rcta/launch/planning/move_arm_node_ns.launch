@@ -1,0 +1,12 @@
+<launch>
+    <arg name="live" default="true"/>
+    <arg name="fake" default="false"/>
+
+	<group ns="roman">
+		<param name="tf_prefix" value="roman"/>
+		<include file="$(find rcta)/launch/planning/move_arm_node.launch">
+			<arg name="live" value="$(arg live)"/>
+			<arg name="fake" value="$(arg fake)"/>
+		</include>
+	</group>
+</launch>
