@@ -46,7 +46,7 @@ public:
 
 		tf::TransformListener listener;
 		ros::Duration(1.0).sleep(); // wait for tf listener to start up
-		listener.lookupTransform("pr2/r_shoulder_pan_link","world", ros::Time(0),pr2_tf);
+		listener.lookupTransform(group.getPoseReferenceFrame(),"world", ros::Time(0),pr2_tf);
 		
 		service = nh.advertiseService("move_pr2_to_pose", &MovePR2Server::handleRequest,this);
 		
@@ -62,12 +62,15 @@ public:
 
 	bool handleRequest(narms::target_pose::Request &req, narms::target_pose::Response &res)
 	{
+		printPose(req.pose);
+		geometry_msgs::Pose rand_pose = group.getRandomPose().pose;
+		printPose(rand_pose);
 		std::cout << "New move PR2 pose request!\n";
 		group.setStartState(*(group.getCurrentState()) );
 		group.setPlannerId("RRTkConfigDefault");
 		group.setPlanningTime(10); // sec
-		group.setPoseTarget(convertPoseViaTransform(req.pose, pr2_tf));
-		//group.setPoseTarget(req.pose);
+		//group.setPoseTarget(convertPoseViaTransform(req.pose, pr2_tf));
+		group.setPoseTarget(rand_pose);
 		//group.setPoseReferenceFrame("pr2/r_shoulder_pan_link");
 		//group.setPositionTarget(pose.position.x, pose.position.y, pose.position.z);
 		std::cout << "Group set\n";

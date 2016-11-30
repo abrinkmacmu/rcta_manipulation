@@ -289,6 +289,14 @@ int main(int argc, char*argv[])
 		geometry_msgs::Pose sampled_handoff_pose = generateRandomPose();
 		printPose(sampled_handoff_pose);
 
+
+		// vizualize pose
+		viz_marker.pose = sampled_handoff_pose;
+		viz_marker.header.stamp = ros::Time::now();
+		ik_vis_pub.publish(viz_marker);
+
+		ros::Duration(.1).sleep();
+		
 		/*std::cout<<"\nSampled a point\n";
 		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff(pr2_pose.position.x,pr2_pose.position.y,pr2_pose.position.z,roman_pose.position.x,roman_pose.position.y,roman_pose.position.z,
 																sampling_variance_inflation_m);
@@ -349,12 +357,7 @@ int main(int argc, char*argv[])
 		*/
 
 
-		// vizualize pose
-		viz_marker.pose = sampled_handoff_pose;
-		viz_marker.header.stamp = ros::Time::now();
-		ik_vis_pub.publish(viz_marker);
-
-		ros::Duration(.1).sleep();
+		
 	}
 
 return 0;
