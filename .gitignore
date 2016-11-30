@@ -4,6 +4,7 @@ src/*
 !src/rcta_msgs
 !src/rcta
 !src/narms
+!src/gundam*
 devel/*
 build/*
 install/*

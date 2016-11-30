@@ -1,0 +1,8 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: gundam_description
+    relative_path: urdf/gundam.urdf.xacro
+  SRDF:
+    relative_path: config/gundam_pr2_roman.srdf
+  CONFIG:
+    generated_timestamp: 1480523739
