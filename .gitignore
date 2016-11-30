@@ -6,6 +6,7 @@ src/*
 !src/narms
 !src/gundam*
 devel/*
+!src/pr2_description
 build/*
 install/*
 !.gitignore
