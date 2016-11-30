@@ -4,14 +4,14 @@
     <xacro:include filename="$(find roman_model)/control/roman_body.transmission.xacro"/>
     <xacro:include filename="$(find hector_sensors_description)/urdf/asus_camera.urdf.xacro"/>
 
-    <xacro:macro name="roman_body" params="name parent *origin namespace">
-        <joint name="torso_joint0" type="fixed">
-            <parent link="${parent}"/>
-            <child link="torso_link0"/>
+    <xacro:macro name="roman_body" params="name parent *origin namespace prefix">
+        <joint name="${prefix}torso_joint0" type="fixed">
+            <parent link="${prefix}${parent}"/>
+            <child link="${prefix}torso_link0"/>
             <insert_block name="origin"/>
         </joint>
 
-        <link name="torso_link0">
+        <link name="${prefix}torso_link0">
             <!-- dummy inertial values -->
             <inertial>
                 <mass value="0.003141"/>
@@ -41,16 +41,16 @@
             </collision>
         </link>
 
-        <joint name="torso_joint1" type="revolute">
+        <joint name="${prefix}torso_joint1" type="revolute">
             <origin xyz="0.593 0 0" rpy="3.14159 0 0"/>
             <axis xyz="1 0 0"/>
-            <parent link="torso_link0"/>
-            <child link="chest"/>
+            <parent link="${prefix}torso_link0"/>
+            <child link="${prefix}chest"/>
             <limit effort="1000.0" lower="-6.283185" upper="6.283185" velocity="0.5"/>
             <dynamics damping="1.0" friction="10.0"/>
         </joint>
 
-        <link name="chest">
+        <link name="${prefix}chest">
             <inertial>
                 <mass value="10.0"/>
                 <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -75,7 +75,7 @@
             </collision>
         </link>
 
-        <xacro:asus_camera name="asus" parent="chest">
+        <xacro:asus_camera name="${prefix}asus" parent="${prefix}chest">
             <origin xyz="0.05 -0.075 0" rpy="${-M_PI/2} 0.0 -2.09"/>
         </xacro:asus_camera>
 
