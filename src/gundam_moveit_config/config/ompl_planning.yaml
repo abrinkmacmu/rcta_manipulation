@@ -65,8 +65,6 @@ pr2_right_arm:
     - TRRTkConfigDefault
     - PRMkConfigDefault
     - PRMstarkConfigDefault
-  projection_evaluator: joints(pr2/r_shoulder_lift_joint,pr2/r_upper_arm_roll_joint)
-  longest_valid_segment_fraction: 0.05
 pr2_right_arm_and_torso:
   planner_configs:
     - SBLkConfigDefault
@@ -95,5 +93,3 @@ roman_right_arm:
     - TRRTkConfigDefault
     - PRMkConfigDefault
     - PRMstarkConfigDefault
-  projection_evaluator: joints(roman/limb_right_joint1,roman/limb_right_joint2)
-  longest_valid_segment_fraction: 0.05

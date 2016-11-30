@@ -1,5 +1,7 @@
 <launch>
 
+  <node pkg="tf" type="static_transform_publisher" name="world_frame_pub" args="0 0 0 0 0 0 world world_link 10"/>
+
   <!-- By default, we do not start a database (it can be large) -->
   <arg name="db" default="false" />
   <!-- Allow user to specify database location -->
@@ -33,15 +35,17 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <!-- Run Rviz and load the default config to see the state of the move_group node -->
+  <!-- Run Rviz and load the default config to see the state of the move_group node
   <include file="$(find gundam_moveit_config)/launch/moveit_rviz.launch">
     <arg name="config" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
+  -->
 
-  <!-- If database loading was enabled, start mongodb as well -->
+  <!-- If database loading was enabled, start mongodb as well
   <include file="$(find gundam_moveit_config)/launch/default_warehouse_db.launch" if="$(arg db)">
     <arg name="moveit_warehouse_database_path" value="$(arg db_path)"/>
   </include>
+-->
 
 </launch>

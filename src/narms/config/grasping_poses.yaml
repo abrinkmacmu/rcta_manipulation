@@ -1,0 +1,13 @@
+roman_x: 0.15
+roman_y: 0.0
+roman_z: 0.0
+roman_roll: 90
+roman_pitch: 0
+roman_yaw: 180
+
+pr2_x: -0.15
+pr2_y: 0.0
+pr2_z: 0.0
+pr2_roll: 0
+pr2_pitch: 0
+pr2_yaw: 0

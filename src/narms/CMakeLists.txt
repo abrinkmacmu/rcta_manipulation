@@ -25,11 +25,22 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   tf
   tf_conversions
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+add_service_files(
+  FILES
+  target_pose.srv
+)
 
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+    geometry_msgs
+    sensor_msgs
+)
 
 
 ###########
@@ -52,23 +63,62 @@ include_directories(
 ## either from message generation or dynamic reconfigure
 # add_dependencies(narms ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+###########################
+##  Tests executables 
+###########################
 
 add_executable(ik_test src/test/ik_test.cpp)
 target_link_libraries(ik_test 
   ${catkin_LIBRARIES}
 )
 
+
+
 add_executable(planning_test src/test/planning_test.cpp)
 target_link_libraries(planning_test 
   ${catkin_LIBRARIES}
 )
 
-add_executable(pr2_planning_test src/test/pr2_planning_test.cpp)
+
+
+
+add_executable(pr2_planning_test 
+  src/test/pr2_planning_test.cpp
+  utils/narms_utils.cpp
+  )
 target_link_libraries(pr2_planning_test 
   ${catkin_LIBRARIES}
 )
+add_dependencies(pr2_planning_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(roman_planning_test src/test/roman_planning_test.cpp)
-target_link_libraries(roman_planning_test 
+
+add_executable(move_arm_server_test 
+  src/test/move_arm_server_test.cpp
+  utils/narms_utils.cpp
+  )
+target_link_libraries(move_arm_server_test 
   ${catkin_LIBRARIES}
 )
+add_dependencies(move_arm_server_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+######################################
+## Source Executables
+######################################
+
+add_executable(pr2_move_arm_server 
+  src/pr2_move_arm_server.cpp
+  utils/narms_utils.cpp
+  )
+target_link_libraries(pr2_move_arm_server 
+  ${catkin_LIBRARIES}
+)
+add_dependencies(pr2_move_arm_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(move_arm_server 
+  src/move_arm_server.cpp
+  utils/narms_utils.cpp
+  )
+target_link_libraries(move_arm_server 
+  ${catkin_LIBRARIES}
+)
+add_dependencies(move_arm_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -10,13 +10,13 @@
     <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
     <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
     <group name="pr2_right_arm">
-        <chain base_link="pr2/r_shoulder_pan_link" tip_link="pr2/r_gripper_tool_frame" />
+        <chain base_link="world_link" tip_link="pr2/r_gripper_tool_frame" />
     </group>
     <group name="pr2_right_arm_and_torso">
         <chain base_link="pr2/torso_lift_link" tip_link="pr2/r_gripper_tool_frame" />
     </group>
     <group name="roman_right_arm">
-        <chain base_link="roman/limb_right_link0" tip_link="roman/limb_right_tool0" />
+        <chain base_link="world_link" tip_link="roman/limb_right_tool0" />
     </group>
     <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
     <group_state name="default" group="roman_right_arm">

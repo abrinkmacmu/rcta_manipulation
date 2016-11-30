@@ -33,18 +33,23 @@ int main(int argc, char*argv[]){
 	ros::init(argc, argv, "pr2_planning_test");
 	ros::NodeHandle nh;
 	moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-	ros::Publisher ik_vis_pub = nh.advertise<visualization_msgs::Marker>( "ik_goals", 0 );
 
-	// PR2 Specific Messages
-	std::string pr2_planning_group("pr2_right_arm");
+	// Visualization markers
+	ros::Publisher ik_vis_pub = nh.advertise<visualization_msgs::Marker>( "ik_goals", 0 );
+	
+	// IK stuff
 	moveit_msgs::GetPositionIK ik_srv;
 	ros::ServiceClient compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("compute_ik");
 
+	// PR2 Specific Messages
+	std::string pr2_planning_group("pr2_right_arm");
+	
 	ros::ServiceClient pr2_move_arm_server = nh.serviceClient<narms::target_pose>("pr2_move_arm_server");
 	
 	
 	// Roman Specific Messages
 	std::string roman_planning_group("roman_right_arm");
+	ros::ServiceClient roman_move_arm_server = nh.serviceClient<narms::target_pose>("roman_move_arm_server");
 
 
 	// Add a visualization marker for shits and giggles**************************
@@ -63,12 +68,21 @@ int main(int argc, char*argv[]){
 	double sampling_variance_inflation_m = 0.0;
 	double sampling_variance_inflation_step_m = 0.01;
 
+	geometry_msgs::Pose pr2_pose;
+	geometry_msgs::Pose roman_pose;
+
 	for(int i = 0; i < 100; i++)
 	{
+		if(!ros::ok()) {return 0;}
+
 		std::cout<<"\nSampled a point\n";
 		geometry_msgs::Pose randPose = generateRandomPose();
+		pr2_pose = randPose;
+		pr2_pose.position.y += 0.1;
+		roman_pose = randPose;
+		roman_pose.position.y -= 0.1;
 
-		getIKServerRequest(randPose, pr2_planning_group, ik_srv);
+		getIKServerRequest(pr2_pose, pr2_planning_group, ik_srv);
 
 		if(compute_ik.call(ik_srv))
 		{
@@ -78,7 +92,7 @@ int main(int argc, char*argv[]){
 			}
 
 			narms::target_pose pr2_mas_request;
-			pr2_mas_request.request.pose = randPose;
+			pr2_mas_request.request.pose = pr2_pose;
 			pr2_move_arm_server.call(pr2_mas_request);
 			if(pr2_mas_request.response.result == true){
 				std::cout << "PR2 plan found!\n";
@@ -90,12 +104,20 @@ int main(int argc, char*argv[]){
 
 		// Roman
 
-		getIKServerRequest(randPose, roman_planning_group, ik_srv);
+		getIKServerRequest(roman_pose, roman_planning_group, ik_srv);
 
 		if(compute_ik.call(ik_srv)){
 			
 			if(ik_srv.response.error_code.val == 1){
 				std::cout << "ROMAN can reach goal!\n";
+
+				narms::target_pose roman_mas_request;
+				roman_mas_request.request.pose = roman_pose;
+				roman_move_arm_server.call(roman_mas_request);
+				if(roman_mas_request.response.result == true)
+				{
+					std::cout << "ROMAN Plan executed!\n";
+				}
 			}
 
 		}	else {

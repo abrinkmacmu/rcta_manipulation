@@ -5,4 +5,4 @@ moveit_setup_assistant_config:
   SRDF:
     relative_path: config/gundam_pr2_roman.srdf
   CONFIG:
-    generated_timestamp: 1480523739
+    generated_timestamp: 1480545760

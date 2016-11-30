@@ -177,6 +177,46 @@ void transformPose( geometry_msgs::Pose& pose,
 
 }
 
+ void getIKServerRequest(geometry_msgs::Pose pose, std::string planning_group, moveit_msgs::GetPositionIK& ik_srv)
+{
+	sensor_msgs::JointState js;
+	js.position = {0,0,0,0,0,0,0};
+	js.velocity = {0,0,0,0,0,0,0};
+	if(planning_group.compare("pr2_right_arm")==0)
+	{
+		js.name = {
+			"pr2/r_shoulder_pan_joint",
+			"pr2/r_shoulder_lift_joint",
+			"pr2/r_upper_arm_roll_joint",
+			"pr2/r_elbow_flex_joint",
+			"pr2/r_forearm_roll_joint",
+			"pr2/r_wrist_flex_joint",
+			"pr2/r_wrist_roll_joint"
+		};
+	}else{
+		js.name= {
+			"roman/limb_right_joint1",
+			"roman/limb_right_joint2",
+			"roman/limb_right_joint3",
+			"roman/limb_right_joint4",
+			"roman/limb_right_joint5",
+			"roman/limb_right_joint6",
+			"roman/limb_right_joint7"
+		};
+	}
+
+	moveit_msgs::PositionIKRequest ik_request;
+	ik_request.group_name = planning_group;
+	ik_request.avoid_collisions = true; // <-- if true, should not need to call validity checker
+	ik_request.robot_state.joint_state = js;
+	ik_request.attempts = 10;
+	ik_request.pose_stamped.header.frame_id = std::string("world");
+	ik_request.pose_stamped.pose = pose;
+	ik_request.pose_stamped.header.stamp = ros::Time::now();
+	ik_srv.request.ik_request = ik_request;
+	
+}
+
 
 
 int main(int argc, char*argv[])
@@ -187,66 +227,18 @@ int main(int argc, char*argv[])
 	ros::Publisher ik_vis_pub = nh.advertise<visualization_msgs::Marker>( "ik_goals", 0 );
 
 	// PR2 Specific Messages
-	std::string pr2_planning_group("right_arm_and_torso");
-	// moveit::planning_interface::MoveGroup pr2_move_group(pr2_planning_group);
-	moveit::planning_interface::MoveGroup::Plan pr2_plan;
-	sensor_msgs::JointState pr2_js;
-	moveit_msgs::PositionIKRequest pr2_ik_request;
-	moveit_msgs::GetPositionIK pr2_ik_srv;
-	ros::ServiceClient pr2_compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("pr2/compute_ik");
+	std::string pr2_planning_group("pr2_right_arm");
+	moveit_msgs::GetPositionIK ik_srv;
+	ros::ServiceClient compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("compute_ik");
 	
 	
 	// Roman Specific Messages
-	std::string roman_planning_group("right_arm");
-	// moveit::planning_interface::MoveGroup roman_move_group(roman_planning_group);
-	moveit::planning_interface::MoveGroup::Plan roman_plan;
-	sensor_msgs::JointState roman_js;
-	moveit_msgs::PositionIKRequest roman_ik_request;
-	moveit_msgs::GetPositionIK roman_ik_srv;
-	ros::ServiceClient roman_compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("roman/compute_ik");
-
-
-	// build ik service messages for PR2***************************
-	pr2_js.name = {"r_shoulder_pan_joint",
-	"r_shoulder_lift_joint",
-	"r_upper_arm_roll_joint",
-	"r_elbow_flex_joint",
-	"r_forearm_roll_joint",
-	"r_wrist_flex_joint",
-	"r_wrist_roll_joint"};	
-	pr2_js.position = {0,0,0,0,0,0,0};
-	pr2_js.velocity = {0,0,0,0,0,0,0};
-
-	// pr2_move_group.setJointValueTarget(pr2_js);
-	pr2_ik_request.group_name = pr2_planning_group;
-	pr2_ik_request.avoid_collisions = true; // <-- if true, should not need to call validity checker
-	pr2_ik_request.pose_stamped.header.frame_id = std::string("world");
-	pr2_ik_request.robot_state.joint_state = pr2_js;
-	pr2_ik_request.attempts = 10;
-
-	// Build ik service message header for ROMAN****************************
-	roman_js.name={"limb_right_joint1",
-	"limb_right_joint2",
-	"limb_right_joint3",
-	"limb_right_joint4",
-	"limb_right_joint5",
-	"limb_right_joint6",
-	"limb_right_joint7"};
-	roman_js.position = {0,0,0,0,0,0,0};
-	roman_js.velocity = {0,0,0,0,0,0,0};
-
-	// roman_move_group.setJointValueTarget(roman_js);
-	roman_ik_request.group_name = roman_planning_group;
-	roman_ik_request.avoid_collisions = true; // <-- if true, should not need to call validity checker
-	roman_ik_request.pose_stamped.header.frame_id = std::string("world");
-	roman_ik_request.robot_state.joint_state = roman_js;
-	roman_ik_request.attempts = 10;
+	std::string roman_planning_group("roman_right_arm");
 
 
 	// Add a visualization marker for shits and giggles**************************
 	visualization_msgs::Marker viz_marker;
 	viz_marker.header.frame_id = "world";
-	viz_marker.ns = "pr2";
 	viz_marker.id = 0;
 	viz_marker.type = visualization_msgs::Marker::CUBE;
 	viz_marker.action = visualization_msgs::Marker::ADD;
@@ -260,91 +252,47 @@ int main(int argc, char*argv[])
 	double sampling_variance_inflation_m = 0.0;
 	double sampling_variance_inflation_step_m = 0.01;
 
-
-	// geometry_msgs::PoseStamped pr2_pose = pr2_move_group.getCurrentPose();
-	// geometry_msgs::PoseStamped roman_pose = roman_move_group.getCurrentPose();
-
-	tf::TransformListener listener;
-	tf::StampedTransform roman_tf;
-	tf::StampedTransform pr2_tf;
-	ros::Duration(1.0).sleep(); // wait for tf listener to start up
-	listener.lookupTransform("world","limb_right_link0", ros::Time(0),roman_tf); 
-	listener.lookupTransform("world","pr2/r_shoulder_pan_link", ros::Time(0),pr2_tf); 
-
-
-	geometry_msgs::Pose pr2_pose; 
-	transformPose(pr2_pose,pr2_tf);
-
-
-	geometry_msgs::Pose roman_pose; 
-	transformPose(roman_pose,roman_tf);
-
-	while(!handoff_sucess)
+	for(int i = 0; i < 100; i++)
 	{
-		// geometry_msgs::Pose sampled_handoff_pose = generateRandomPose();
-		//printPose(pose);
+		std::cout<<"\nSampled point" << i<< " \n";
+		geometry_msgs::Pose randPose = generateRandomPose();
 
-		std::cout<<"\nSampled a point\n";
-		geometry_msgs::Pose sampled_handoff_pose = sampleHandoff(pr2_pose.position.x,pr2_pose.position.y,pr2_pose.position.z,roman_pose.position.x,roman_pose.position.y,roman_pose.position.z,
-																sampling_variance_inflation_m);
-		std::cout<<sampled_handoff_pose.position.x<<" "<<sampled_handoff_pose.position.y<<" "<<sampled_handoff_pose.position.z;
-		pr2_js.header.stamp = ros::Time::now();
-		pr2_ik_request.pose_stamped.pose = sampled_handoff_pose;
-		pr2_ik_request.pose_stamped.header.stamp = ros::Time::now();
-		pr2_ik_srv.request.ik_request = pr2_ik_request;
+		getIKServerRequest(randPose, pr2_planning_group, ik_srv);
 
-		//Note whether both the robots were able to reach the sampled point
-		unsigned int robots_reached = 0;
-		if(pr2_compute_ik.call(pr2_ik_srv))
+		if(compute_ik.call(ik_srv))
 		{
 			//std::cout << "Error code: " << pr2_ik_srv.response.error_code.val << "\n";
-			if(pr2_ik_srv.response.error_code.val == 1)
-			{
+			if(ik_srv.response.error_code.val == 1){
 				std::cout << "PR2 can reach goal!\n";
-				++robots_reached;
 			}
+
 		}else{
 			std::cout << "Could not call PR2 IK service\n";
 		}
 
-		roman_js.header.stamp = ros::Time::now();
-		roman_ik_request.pose_stamped.pose = sampled_handoff_pose;
-		roman_ik_request.pose_stamped.header.stamp = ros::Time::now();
-		roman_ik_srv.request.ik_request = roman_ik_request;
-		if(roman_compute_ik.call(roman_ik_srv))
-		{
-			//std::cout << "Error code: " << pr2_ik_srv.response.error_code.val << "\n";
-			if(roman_ik_srv.response.error_code.val == 1)
-			{
+		// Roman
+
+		getIKServerRequest(randPose, roman_planning_group, ik_srv);
+
+		if(compute_ik.call(ik_srv)){
+			
+			if(ik_srv.response.error_code.val == 1){
 				std::cout << "ROMAN can reach goal!\n";
-				++robots_reached;
-					
 			}
-		}
-		else
-		{
+
+		}	else {
+		
 			std::cout << "Could not call ROMAN IK service\n";
+		
 		}
-
-		if(pr2_ik_srv.response.error_code.val == 1 && roman_ik_srv.response.error_code.val == 1)
-		{
-			handoff_sucess=true;
-		}
-		else
-		{	
-			//update the step based on how many robots were able to reach this point
-			sampling_variance_inflation_step_m*=(2-robots_reached);
-			sampling_variance_inflation_m+=sampling_variance_inflation_step_m;
-		}
-
 
 
 		// vizualize pose
-		viz_marker.pose = sampled_handoff_pose;
+		viz_marker.pose = randPose;
 		viz_marker.header.stamp = ros::Time::now();
 		ik_vis_pub.publish(viz_marker);
 
-		ros::Duration(.1).sleep();
+		ros::Duration(.3).sleep();
 	}
 
 return 0;
