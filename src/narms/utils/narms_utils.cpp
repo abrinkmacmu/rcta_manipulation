@@ -49,6 +49,20 @@ tf::Transform geoPose2Transform(geometry_msgs::Pose p)
     return tf1;
 }
 
+geometry_msgs::Pose getPoseFromRosParamRPYDegrees(std::string prefix)
+{
+	double x, y, z, roll, pitch, yaw;
+	ros::param::get(prefix+"_x", x);
+	ros::param::get(prefix+"_y", y);
+	ros::param::get(prefix+"_z", z);
+	ros::param::get(prefix+"_roll", roll);
+	ros::param::get(prefix+"_pitch", pitch);
+	ros::param::get(prefix+"_yaw", yaw);
+
+
+	return generatePose(x,y,z,roll*M_PI/180.0,pitch*M_PI/180.0,yaw*M_PI/180.0);
+}
+
 geometry_msgs::Pose Affine2Pose(Eigen::Affine3d A) {
 	geometry_msgs::Pose outPose;
 	outPose.position.x = A.translation()[0];
@@ -98,7 +112,7 @@ geometry_msgs::Pose generatePose(double x, double y, double z, double roll, doub
     Qyaw = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
 
     Eigen::Quaterniond Q;
-	Q =  Qroll * Qpitch * Qyaw ;
+	Q =   Qyaw * Qpitch * Qroll;
 
 	geometry_msgs::Pose p;
 	p.position.x = x;
@@ -163,7 +177,7 @@ geometry_msgs::Pose generateRandomPose()
 	
 }
 
-void getGraspingPoses(const tf::StampedTransform& tf_object, geometry_msgs::Pose& pr2_pose, geometry_msgs::Pose& roman_pose)
+void getGraspingPoses(const tf::Transform& tf_object, geometry_msgs::Pose& pr2_pose, geometry_msgs::Pose& roman_pose)
 {
 	
 	Eigen::Affine3d A_world_object;
@@ -239,4 +253,23 @@ moveit_msgs::CollisionObject createCollisionBox(
   collision_object.operation = collision_object.ADD;
 
   return collision_object;
+}
+
+void visualizeObjectPose(geometry_msgs::Pose pose, std::string prefix )
+{
+	tf::TransformBroadcaster tf_broadcaster;
+	geometry_msgs::Pose pr2_pose;
+	geometry_msgs::Pose roman_pose;
+
+	std::string obj_name(prefix+"object");
+
+	tf::StampedTransform poseTF(geoPose2Transform(pose), ros::Time::now(), "world_link", obj_name);
+	getGraspingPoses(poseTF, pr2_pose, roman_pose);
+
+	tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(pr2_pose), ros::Time::now(), "world_link", prefix+"pr2_grasp"));
+	tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(roman_pose), ros::Time::now(), "world_link", prefix+"roman_grasp"));
+	tf_broadcaster.sendTransform(poseTF);
+	ros::spinOnce();
+	ros::Duration(0.1).sleep();
+
 }

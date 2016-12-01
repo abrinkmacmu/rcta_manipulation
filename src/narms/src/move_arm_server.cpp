@@ -100,7 +100,7 @@ public:
 		//group.setPositionTarget(pose.position.x, pose.position.y, pose.position.z);
 		moveit::planning_interface::MoveGroup::Plan plan;
 		bool suc = group.plan(plan);
-		if(suc)
+		if(suc && req.execute_plan)
 		{
 			ROS_INFO("MAS: plan found, executing now");
 			group.execute(plan);

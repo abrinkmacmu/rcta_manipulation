@@ -1,7 +1,36 @@
-shelf_x: 1.25
+shelf_x: 2.25
 shelf_y: 2.25
 shelf_z: 0.75
 
 shelf_box_x: 1.0
 shelf_box_y: 1.0
 shelf_box_z: 1.5
+
+start_pose_x:     1.0
+start_pose_y:     0.3
+start_pose_z:     0.25
+start_pose_roll:  90
+start_pose_pitch: -45
+start_pose_yaw:   180
+
+goal_pose_x:     1.0
+goal_pose_y:     2.0
+goal_pose_z:     1.4
+goal_pose_roll:  180
+goal_pose_pitch: 0
+goal_pose_yaw:   0
+
+
+
+
+
+
+
+
+
+#x:     0
+#y:     0
+#z:     0
+#roll:  0
+#pitch: 0
+#yaw:   0

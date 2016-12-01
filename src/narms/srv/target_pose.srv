@@ -1,5 +1,5 @@
 geometry_msgs/Pose pose
-
+bool execute_plan
 ---
 
 bool result

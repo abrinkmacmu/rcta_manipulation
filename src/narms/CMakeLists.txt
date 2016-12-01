@@ -70,7 +70,15 @@ include_directories(
 ##  Executables
 ######################################
 
-
+add_executable(state_machine 
+  src/state_machine.cpp
+  utils/narms_utils.cpp
+  utils/states.cpp
+  )
+target_link_libraries(state_machine 
+  ${catkin_LIBRARIES}
+)
+add_dependencies(state_machine ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ######################################
 ##  Nodes and Servers
@@ -92,18 +100,6 @@ target_link_libraries(gripper_server
   ${catkin_LIBRARIES}
 )
 add_dependencies(gripper_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-add_executable(planning_scene_manager 
-  src/planning_scene_manager.cpp
-  utils/narms_utils.cpp
-  )
-target_link_libraries(planning_scene_manager 
-  ${catkin_LIBRARIES}
-)
-add_dependencies(planning_scene_manager ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-
-
 
 
 
