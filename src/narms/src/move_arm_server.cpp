@@ -33,11 +33,12 @@ class MoveArmServer {
 public:
 
 	moveit::planning_interface::MoveGroup group;
-	
+	moveit::planning_interface::PlanningSceneInterface PSI;
 	ros::AsyncSpinner spinner;
 	ros::ServiceServer service;
 	ros::NodeHandle nh;
 	tf::StampedTransform pr2_tf;
+
 
 	MoveArmServer(std::string group_name, std::string prefix):
 	nh(),
@@ -60,9 +61,33 @@ public:
 		//rm->printModelInfo(std::cout);
 	}
 
+	void updateCollisionObjects()
+	{
+		double shelf_x, shelf_y, shelf_z;
+		ros::param::get("shelf_x", shelf_x);
+		ros::param::get("shelf_y", shelf_y);
+		ros::param::get("shelf_z", shelf_z);
+
+		double shelf_box_x, shelf_box_y, shelf_box_z;
+		ros::param::get("shelf_box_x", shelf_box_x);
+		ros::param::get("shelf_box_y", shelf_box_y);
+		ros::param::get("shelf_box_z", shelf_box_z);
+
+		geometry_msgs::Pose shelf_pose = generatePose(shelf_x, shelf_y, shelf_z, 0, 0, 0);
+
+		moveit_msgs::CollisionObject CO;
+		CO = createCollisionBox(shelf_pose, "shelf", "world_link", shelf_box_x, shelf_box_y, shelf_box_z);
+
+		std::vector<moveit_msgs::CollisionObject> vecCollisionObjects;
+		vecCollisionObjects.push_back(CO);
+		PSI.addCollisionObjects(vecCollisionObjects);
+	}
+
 
 	bool handleRequest(narms::target_pose::Request &req, narms::target_pose::Response &res)
 	{
+
+		updateCollisionObjects();
 		printPose(req.pose);
 		//geometry_msgs::Pose rand_pose = group.getRandomPose().pose;
 		//printPose(rand_pose);

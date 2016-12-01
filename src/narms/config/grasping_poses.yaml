@@ -1,7 +1,7 @@
 roman_x: 0.15
 roman_y: 0.0
 roman_z: 0.0
-roman_roll: 90
+roman_roll: 0
 roman_pitch: 0
 roman_yaw: 180
 
@@ -11,3 +11,8 @@ pr2_z: 0.0
 pr2_roll: 0
 pr2_pitch: 0
 pr2_yaw: 0
+
+object_x_scale: 0.3
+object_y_scale: 0.05
+object_z_scale: 0.15
+

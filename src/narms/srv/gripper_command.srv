@@ -1,0 +1,6 @@
+float32 pr2_command
+float32 roman_command
+
+---
+
+bool result

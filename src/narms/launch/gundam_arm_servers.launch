@@ -9,7 +9,11 @@
 		<param name="prefix" type="string" value="roman"/>
 	</node>
 
+	<node pkg="narms" type="gripper_server" name="gripper_server"/>
+
 	<rosparam command="load" file="$(find narms)/config/grasping_poses.yaml" />
+
+	<rosparam command="load" file="$(find narms)/config/planning_problem.yaml" />
 
 
 </launch>

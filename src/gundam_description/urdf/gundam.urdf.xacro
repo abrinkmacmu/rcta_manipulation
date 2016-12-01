@@ -29,7 +29,7 @@
    </joint>
   
   <joint name="world_joint_pr2" type="fixed">
-      <origin xyz="0 1.5 0"  rpy="0 0 0" />
+      <origin xyz="0 2.25 0"  rpy="0 0 0" />
       <parent link="world_link" />
       <child link="pr2/base_footprint" />
    </joint>
@@ -168,7 +168,8 @@
 
     <xacro:include filename="$(find roman_model)/urdf/talon.urdf.xacro"/>
     <xacro:include filename="$(find roman_model)/urdf/roman_body.urdf.xacro"/>
-    <xacro:include filename="$(find roman_model)/urdf/robosimian_arm.urdf.xacro"/>
+    <!-- Note: using joint limited (-1.57, 1.57) robosimian arm model -->
+    <xacro:include filename="$(find roman_model)/urdf/robosimian_arm_joint_limited.urdf.xacro"/>
 
     <xacro:include filename="$(find roman_model)/gazebo/gazebo.urdf.xacro"/>
 
