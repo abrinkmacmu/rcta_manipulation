@@ -6,6 +6,8 @@
 #include <moveit_msgs/GetPositionIK.h>
 #include <tf/transform_broadcaster.h>
 
+#include <std_msgs/String.h>
+
 #include <narms/target_pose.h>
 #include <narms/gripper_command.h>
 
@@ -69,6 +71,9 @@ int main(int argc, char* argv[]){
 	ros::ServiceClient gripperServer = nh.serviceClient<narms::gripper_command>("gripper_command_server");
 	ros::ServiceClient computeIK = nh.serviceClient<moveit_msgs::GetPositionIK>("compute_ik");
 
+	ros::Publisher posessionPub = nh.advertise<std_msgs::String>("arm_possession", 1);
+	std_msgs::String possession;
+
 	std::string startRobot;
 	std::string goalRobot;
 
@@ -124,7 +129,7 @@ int main(int argc, char* argv[]){
 	ros::param::get("narms_planning_time", mas_srv.request.planning_time);
 
 
-	
+
 	narms::gripper_command gripper_srv;
 	/*
 	float32 pr2_command
@@ -153,36 +158,55 @@ int main(int argc, char* argv[]){
 
 	// Linear progression of service calls ******************************************************
 	
+
+	ROS_INFO("Moving Start robot to pickup object");
 	mas_srv.request.pose = startRobotPose; 
 	success = startRobotMAS.call(mas_srv);
 	if(!mas_srv.response.result) { ROS_ERROR("Could not move start robot to pickup"); return 0;}	
 
 	std::cout << "Testing: Trajectory contains " << mas_srv.response.traj.joint_trajectory.points.size() << "\n";
 
+
+	ROS_INFO("Start robot commanded to grasp object");
 	gripper_srv = getGripperSrv(startRobot, 0);
 	gripperServer.call(gripper_srv);
 	if(!gripper_srv.response.result) {ROS_ERROR("Could not command gripper"); return 0;}
+	possession.data = startRobot;
+	posessionPub.publish(possession);
+	ros::spinOnce();
+	ros::Duration(0.5).sleep();
 
+	ROS_INFO("Moving Start robot to handoff pose");
 	mas_srv.request.pose = startRobotHandoffPose; mas_srv.request.execute_plan = true;
 	success = startRobotMAS.call(mas_srv);
 	if(!mas_srv.response.result) { ROS_ERROR("Could not move start robot to handoff"); return 0;}	
 
+	ROS_INFO("Moving goal robot to handoff pose");
 	mas_srv.request.pose = goalRobotHandoffPose; mas_srv.request.execute_plan = true;
 	success = goalRobotMAS.call(mas_srv);
 	if(!mas_srv.response.result) { ROS_ERROR("Could not move goal robot to handoff"); return 0;}	
 
+	ROS_INFO("Goal robot commanded to grasp object");
 	gripper_srv = getGripperSrv(goalRobot, 0);
 	gripperServer.call(gripper_srv);
 	if(!gripper_srv.response.result) {ROS_ERROR("Could not command gripper"); return 0;}
+	ros::Duration(0.5).sleep();
 
+	ROS_INFO("Start robot commanded to release object");
 	gripper_srv = getGripperSrv(startRobot, 1);
 	gripperServer.call(gripper_srv);
 	if(!gripper_srv.response.result) {ROS_ERROR("Could not command gripper"); return 0;}
+	possession.data = goalRobot;
+	posessionPub.publish(possession);
+	ros::spinOnce();
+	ros::Duration(0.5).sleep();
 
+	ROS_INFO("Moving goal robot to goal pose");
 	mas_srv.request.pose = goalRobotPose; mas_srv.request.execute_plan = true;
 	success = goalRobotMAS.call(mas_srv);
 	if(!mas_srv.response.result) { ROS_ERROR("Could not move goal robot to goal"); return 0;}
 
+	ROS_INFO("Goal robot commanded to release object");
 	gripper_srv = getGripperSrv(goalRobot, 1);
 	gripperServer.call(gripper_srv);
 	if(!gripper_srv.response.result) {ROS_ERROR("Could not command gripper"); return 0;}

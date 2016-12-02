@@ -25,15 +25,3 @@ start_pose_yaw:   0
 narms_planner_id: "RRTkConfigDefault"
 narms_planning_time: 10 # seconds
 
-
-
-
-
-
-
-#x:     0
-#y:     0
-#z:     0
-#roll:  0
-#pitch: 0
-#yaw:   0
