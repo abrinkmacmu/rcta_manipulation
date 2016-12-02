@@ -6,19 +6,19 @@ shelf_box_x: 1.0
 shelf_box_y: 1.0
 shelf_box_z: 1.5
 
-start_pose_x:     1.0
-start_pose_y:     0.3
-start_pose_z:     0.25
-start_pose_roll:  90
-start_pose_pitch: -45
-start_pose_yaw:   180
-
 goal_pose_x:     1.0
-goal_pose_y:     2.0
-goal_pose_z:     1.4
-goal_pose_roll:  180
-goal_pose_pitch: 0
-goal_pose_yaw:   0
+goal_pose_y:     0.3
+goal_pose_z:     0.25
+goal_pose_roll:  90
+goal_pose_pitch: -45
+goal_pose_yaw:   180
+
+start_pose_x:     1.0
+start_pose_y:     2.0
+start_pose_z:     1.4
+start_pose_roll:  180
+start_pose_pitch: 0
+start_pose_yaw:   0
 
 #see gundam_moveit_config/config/ompl_planning.yaml for possible OMPL planners
 # SBPL planners coming soon

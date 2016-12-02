@@ -120,6 +120,11 @@ int main(int argc, char* argv[]){
 	mas_srv.request.planner_id = "RRTConnectkConfigDefault";
 	mas_srv.request.planning_time = 5.0;
 
+	ros::param::get("narms_planner_id", mas_srv.request.planner_id);
+	ros::param::get("narms_planning_time", mas_srv.request.planning_time);
+
+
+	
 	narms::gripper_command gripper_srv;
 	/*
 	float32 pr2_command
