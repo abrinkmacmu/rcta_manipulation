@@ -1,5 +1,7 @@
 geometry_msgs/Pose pose
 bool execute_plan
+string planner_id
+float32 planning_time
 ---
-
+moveit_msgs/RobotTrajectory traj
 bool result

@@ -64,9 +64,6 @@ int main(int argc, char* argv[]){
 		visualizeObjectPose(goalPose, "goal_pose_");
 	}
 
-	narms::target_pose mas_srv;
-	narms::gripper_command gripper_srv;
-
 	ros::ServiceClient startRobotMAS;
 	ros::ServiceClient goalRobotMAS;
 	ros::ServiceClient gripperServer = nh.serviceClient<narms::gripper_command>("gripper_command_server");
@@ -109,8 +106,27 @@ int main(int argc, char* argv[]){
 		goalRobotPose = roman_pose;
 	}
 
+	narms::target_pose mas_srv;
+	/*
+	geometry_msgs/Pose pose
+	bool execute_plan
+	string planner_id
+	float32 planning_time
+	---
+	moveit_msgs/RobotTrajectory traj
+	bool result
+	*/
+	mas_srv.request.execute_plan = true;
+	mas_srv.request.planner_id = "RRTConnectkConfigDefault";
+	mas_srv.request.planning_time = 5.0;
 
-
+	narms::gripper_command gripper_srv;
+	/*
+	float32 pr2_command
+	float32 roman_command
+	---
+	bool result
+	*/
 
 	// State 2**********************************************************
 	
@@ -132,9 +148,11 @@ int main(int argc, char* argv[]){
 
 	// Linear progression of service calls ******************************************************
 	
-	mas_srv.request.pose = startRobotPose; mas_srv.request.execute_plan = true;
+	mas_srv.request.pose = startRobotPose; 
 	success = startRobotMAS.call(mas_srv);
 	if(!mas_srv.response.result) { ROS_ERROR("Could not move start robot to pickup"); return 0;}	
+
+	std::cout << "Testing: Trajectory contains " << mas_srv.response.traj.joint_trajectory.points.size() << "\n";
 
 	gripper_srv = getGripperSrv(startRobot, 0);
 	gripperServer.call(gripper_srv);

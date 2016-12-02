@@ -1,15 +1,15 @@
 <launch>
-	<node pkg="narms" type="move_arm_server" name="pr2_move_arm_server">
+	<node pkg="narms" type="move_arm_server" name="pr2_move_arm_server" output="screen">
 		<param name="group_name" type="string" value="pr2_right_arm" />
 		<param name="prefix" type="string" value="pr2"/>
 	</node>
 
-	<node pkg="narms" type="move_arm_server" name="roman_move_arm_server">
+	<node pkg="narms" type="move_arm_server" name="roman_move_arm_server" output="screen">
 		<param name="group_name" type="string" value="roman_right_arm" />
 		<param name="prefix" type="string" value="roman"/>
 	</node>
 
-	<node pkg="narms" type="gripper_server" name="gripper_server"/>
+	<node pkg="narms" type="gripper_server" name="gripper_server" output="screen"/>
 
 	<rosparam command="load" file="$(find narms)/config/grasping_poses.yaml" />
 

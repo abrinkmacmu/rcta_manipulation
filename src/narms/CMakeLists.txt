@@ -41,6 +41,7 @@ generate_messages(
     std_msgs
     geometry_msgs
     sensor_msgs
+    moveit_msgs
 )
 
 

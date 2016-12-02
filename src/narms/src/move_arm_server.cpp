@@ -88,16 +88,28 @@ public:
 	{
 
 		updateCollisionObjects();
-		printPose(req.pose);
-		//geometry_msgs::Pose rand_pose = group.getRandomPose().pose;
-		//printPose(rand_pose);
+
 		group.setStartState(*(group.getCurrentState()) );
-		group.setPlannerId("RRTkConfigDefault");
-		group.setPlanningTime(10); // sec
-		//group.setPoseTarget(convertPoseViaTransform(req.pose, pr2_tf));
+		std::string planner_id;
+		if(req.planner_id.compare("")== 0){
+			planner_id = "RRTkConfigDefault";
+		}else{
+			planner_id = req.planner_id;
+		}
+		group.setPlannerId(planner_id);
+		ROS_INFO("using planner id: %s", planner_id.c_str());
+
+		double planning_time;
+		if(req.planning_time == 0){
+			planning_time = 10; // sec
+		}else{
+			planning_time = double(req.planning_time);
+		}
+		group.setPlanningTime(planning_time);
+		ROS_INFO("using planning time of %f", planning_time);
+
 		group.setPoseTarget(req.pose);
-		//group.setPoseReferenceFrame("pr2/r_shoulder_pan_link");
-		//group.setPositionTarget(pose.position.x, pose.position.y, pose.position.z);
+
 		moveit::planning_interface::MoveGroup::Plan plan;
 		bool suc = group.plan(plan);
 		if(suc && req.execute_plan)
@@ -105,6 +117,7 @@ public:
 			ROS_INFO("MAS: plan found, executing now");
 			group.execute(plan);
 		}
+		res.traj = plan.trajectory_;
 		res.result = suc;
 		return true;
 	}
