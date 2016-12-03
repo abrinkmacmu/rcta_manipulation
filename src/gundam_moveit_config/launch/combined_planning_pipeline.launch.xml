@@ -1,0 +1,38 @@
+<launch>
+
+    <!-- sbpl Plugin for Moveit! -->
+    <arg name="planning_plugin" value="sbpl_interface/SBPLPlanner"/>
+    <!-- OMPL Plugin for MoveIt! -->
+    <!-- <arg name="planning_plugin" value="ompl_interface/OMPLPlanner" /> -->
+
+    <arg name="planning_adapters" value="
+            default_planner_request_adapters/FixWorkspaceBounds
+            default_planner_request_adapters/FixStartStateBounds
+            default_planner_request_adapters/FixStartStateCollision
+            default_planner_request_adapters/FixStartStatePathConstraints"/>
+
+            <!-- default_planner_request_adapters/AddTimeParameterization -->
+
+    <arg name="start_state_max_bounds_error" value="0.1"/>
+
+    <param name="planning_plugin" value="$(arg planning_plugin)"/>
+    <param name="request_adapters" value="$(arg planning_adapters)"/>
+    <param name="start_state_max_bounds_error" value="$(arg start_state_max_bounds_error)"/>
+
+    
+
+    <!-- SBPL -->
+    <rosparam command="load" file="$(find gundam_moveit_config)/config/sbpl_planning.yaml"/>
+    <group ns="roman_right_arm">
+        <param name="mprim_filename" value="$(find rcta)/config/robots/roman/right_arm.mprim"/>
+    </group>
+
+    <group ns="pr2_right_arm">
+        <param name="mprim_filename" value="$(find rcta)/config/robots/roman/right_arm.mprim"/>
+    </group>
+
+    <!-- OMPL -->
+    <!--
+    <rosparam command="load" file="$(find gundam_moveit_config)/config/ompl_planning.yaml"/>
+    -->
+</launch>

@@ -12,9 +12,6 @@
     <group name="pr2_right_arm">
         <chain base_link="world_link" tip_link="pr2/r_gripper_tool_frame" />
     </group>
-    <group name="pr2_right_arm_and_torso">
-        <chain base_link="pr2/torso_lift_link" tip_link="pr2/r_gripper_tool_frame" />
-    </group>
     <group name="roman_right_arm">
         <chain base_link="world_link" tip_link="roman/limb_right_tool0" />
     </group>
