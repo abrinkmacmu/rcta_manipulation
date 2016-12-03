@@ -9,7 +9,11 @@ bool checkStartandGoalIK(geometry_msgs::Pose startPose, geometry_msgs::Pose goal
 	ros::ServiceClient& computeIK,
 	std::string& startRobot, std::string& goalRobot);
 
-bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pose goalPose, 
-	std::string startRobot, std::string goalRobot, geometry_msgs::Pose& handoffPose);
+bool computeSampledHandoffPose(geometry_msgs::Pose startPose, 
+								geometry_msgs::Pose goalPose,
+							std::string startRobot, 
+							std::string goalRobot, 
+							geometry_msgs::Pose& handoffPose,
+							unsigned int num_of_handoff_samples);
 
 #endif

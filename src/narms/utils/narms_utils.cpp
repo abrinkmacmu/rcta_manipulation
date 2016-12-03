@@ -193,19 +193,23 @@ void getGraspingPoses(const tf::Transform& tf_object, geometry_msgs::Pose& pr2_p
 	ros::param::get("pr2_pitch", pr2_pitch);
 	ros::param::get("pr2_yaw", pr2_yaw);
 
+	// Get the offset pose for the PR2
 	geometry_msgs::Pose pr2_pose_object = generatePose(pr2_x, pr2_y, pr2_z, 
 		pr2_roll/180.0*M_PI, pr2_pitch/180.0*M_PI, pr2_yaw/180.0*M_PI);
 
+	// Create a transform for this pose
 	tf::Transform tf_pr2_grasp;
 	Eigen::Affine3d A_object_pr2_grasp;
 	tf_pr2_grasp = geoPose2Transform(pr2_pose_object);
 	tf::transformTFToEigen(tf_pr2_grasp, A_object_pr2_grasp);
 
+	// Apply Transform to get grasp-pose
 	Eigen::Affine3d A_world_pr2_grasp;
 	A_world_pr2_grasp = A_world_object * A_object_pr2_grasp;
 
 	pr2_pose = Affine2Pose(A_world_pr2_grasp);
 
+	// Same for Roman
 	double roman_x, roman_y, roman_z;
 	double roman_roll, roman_pitch, roman_yaw;
 
@@ -272,4 +276,36 @@ void visualizeObjectPose(geometry_msgs::Pose pose, std::string prefix )
 	ros::spinOnce();
 	ros::Duration(0.1).sleep();
 
+}
+
+// Sample a handoff point based on the location of the two bots, variance in sampling
+geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
+	double c_x2, double c_y2, double c_z2, double variance_inflation)
+{
+	
+	double robo1_reach_m =1.5;
+	double robo2_reach_m =1.5;
+
+	double x_center_m = 0.5*(c_x1 + c_x2);
+	double y_center_m = 0.5*(c_y1 + c_y2);
+	double z_center_m = 0.5*(c_z1 + c_z2);
+
+	double sampling_variance = std::sqrt(std::pow(c_x1-c_x2,2)+std::pow(c_y1-c_y2,2)+std::pow(c_z1-c_z2,2))/3.0;
+
+	//Variance inflation is a number between [0,1], signifying how percentage inflated the sampling should be
+	sampling_variance = sampling_variance * (1+variance_inflation);
+
+	std::cout<<"\nSampling Variance :"<<sampling_variance<<std::endl;
+
+	x_center_m = sample_from_gaussian(x_center_m,sampling_variance);
+	y_center_m = sample_from_gaussian(y_center_m,sampling_variance);
+	z_center_m = sample_from_gaussian(z_center_m,sampling_variance);
+
+
+	double roll = 3.14*(std::rand() / double(RAND_MAX) -0.5);
+	double pitch = 3.14*(std::rand() / double(RAND_MAX) -0.5);
+	double yaw = 3.14*(std::rand() / double(RAND_MAX) -0.5);
+
+	//return the generated pose
+	return generatePose(x_center_m, y_center_m, z_center_m, yaw, pitch,roll);
 }

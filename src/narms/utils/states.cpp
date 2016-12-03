@@ -61,15 +61,145 @@ bool checkStartandGoalIK(geometry_msgs::Pose startPose, geometry_msgs::Pose goal
 }
 
 bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pose goalPose, 
-	std::string startRobot, std::string goalRobot, geometry_msgs::Pose& handoffPose)
+	std::string startRobot, std::string goalRobot, geometry_msgs::Pose& handoffPose,
+	unsigned int num_of_handoff_samples,
+	ros::ServiceClient& compute_ik,
+	ros::ServiceClient& robot1_move_arm_server,
+	ros::ServiceClient& robot2_move_arm_server)
 {
-	// ;(0.375207, 1.26025, 0.768803)   q[0.163179, 0.207972, -0.628604, 0.731421
-	handoffPose.position.x = 0.375207;
-	handoffPose.position.y = 1.26025;
-	handoffPose.position.z = 0.768803;
-	handoffPose.orientation.x = 0.163179;
-	handoffPose.orientation.y = 0.207972;
-	handoffPose.orientation.z = -0.628604;
-	handoffPose.orientation.w = 0.731421;
+	unsigned int handoffs_found = 0;
+	moveit_msgs::GetPositionIK ik_srv_robot1;
+	moveit_msgs::GetPositionIK ik_srv_robot2;
+
+	getIKServerRequest(startPose, startRobot, ik_srv_robot1);
+	getIKServerRequest(startPose, startRobot, ik_srv_robot2);
+
+	// ros::ServiceClient compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("compute_ik");
+
+	// Collection of valid trajectories to be later used for evaluation
+	std::vector<moveit_msgs::RobotTrajectory> robot1_trajectories;
+	std::vector<moveit_msgs::RobotTrajectory> robot2_trajectories;
+
+	while(handoffs_found!=num_of_handoff_samples)
+	{
+		//continue sampling till you find a solution reachable by both arms
+		if(!ros::ok()) {return 0;}
+
+		geometry_msgs::Pose handoffPose = generateRandomPose(); // Replace with sampled pose
+
+		tf::StampedTransform handoffTf(geoPose2Transform(handoffPose), ros::Time::now(), "world_link", "object");
+
+		getGraspingPoses(handoffTf, startPose, goalPose);
+
+		// tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(pr2_pose), ros::Time::now(), "world_link", "pr2_grasp"));
+		// tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(roman_pose), ros::Time::now(), "world_link", "roman_grasp"));
+		// tf_broadcaster.sendTransform(handoffTf);
+
+		// vizualize pose
+		// viz_marker.pose = handoffPose;
+		// viz_marker.header.stamp = ros::Time::now();
+		// ik_vis_pub.publish(viz_marker);
+
+
+		int n_reached = 0;
+
+		// PR2 IK ***********************************************************************************
+
+		ros::WallTime t0 = ros::WallTime::now();
+		bool ik_suc = compute_ik.call(ik_srv_robot1);
+		ros::WallTime t1 = ros::WallTime::now();
+		std::cout << "Robot1 compute_IK call time: " << (t1-t0).toSec() << "\n";
+
+		if(ik_suc){
+			if(ik_srv_robot1.response.error_code.val == 1){
+				std::cout << "Robot1 can reach goal!\n";
+				n_reached++;
+			}
+			
+		}else{
+			std::cout << "Could not call Robot1 IK service\n";
+		}
+
+		// Roman IK **********************************************************************************
+
+		// getIKServerRequest(goalPose, goalRobot, ik_srv);
+
+		t0 = ros::WallTime::now();
+		ik_suc = compute_ik.call(ik_srv_robot2);
+		t1 = ros::WallTime::now();
+		std::cout << "roman compute_IK call time: " << (t1-t0).toSec() << "\n";
+
+
+		if(ik_suc){
+			if(ik_srv_robot2.response.error_code.val == 1){
+				std::cout << "ROMAN can reach goal!\n";
+				n_reached++;
+			}
+		}	else {
+			std::cout << "Could not call ROMAN IK service\n";
+		}
+
+		// Planning and Execution ******************************************************************
+
+	if (n_reached >= 2){
+		// Solution is feasible for both PR2 and ROMAN, 
+		// Get the trajectory for this point and evaluate later
+		int n_planned = 0;
+
+		// PR2 planning and execution
+		narms::target_pose robot1_mas_request;
+		robot1_mas_request.request.pose = startPose;
+		robot1_mas_request.request.execute_plan=false;
+
+
+		ros::WallTime t2 = ros::WallTime::now();
+		robot1_move_arm_server.call(robot1_mas_request);
+		ros::WallTime t3 = ros::WallTime::now();
+		std::cout << "pr2 move_arm_server call time: " << (t3-t2).toSec() << "\n";
+
+		if(robot1_mas_request.response.result == true){
+			std::cout << "PR2 Trajectory Found!\n";
+			n_planned ++;
+		}
+
+		// Roman planning and execution
+		narms::target_pose robot2_mas_request;
+		robot2_mas_request.request.pose = goalPose;
+		robot2_mas_request.request.execute_plan=false;
+
+		t2 = ros::WallTime::now();
+		robot2_move_arm_server.call(robot2_mas_request);
+		t3 = ros::WallTime::now();
+		std::cout << "roman move_arm_server call time: " << (t3-t2).toSec() << "\n";
+
+
+		if(robot2_mas_request.response.result == true)
+		{
+			std::cout << "ROMAN Trajectory Found!\n";
+			n_planned++;
+		}
+
+		if(n_planned >= 2){
+			std::cout << "\nBOTH ARM REACHED OBJECT\n";
+			printPose(handoffPose);
+			ros::Duration(2).sleep();
+			robot1_trajectories.push_back(robot1_mas_request.response.traj);
+			robot2_trajectories.push_back(robot2_mas_request.response.traj);
+		}
+	}
+
+	}
 	return true;
+}
+
+
+double score_trajectory(moveit_msgs::RobotTrajectory& traj)
+{	
+	double score = 0;
+	double sum_of_velocities = 0.0;
+	for ( auto& traj_point :traj)
+	{
+		// sum_of_velocities = std::inner_product( v1.begin(), v1.end(), v1.begin(), 0 );
+	}
+	return score;
 }
