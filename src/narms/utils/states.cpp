@@ -90,23 +90,39 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 	tf::TransformBroadcaster tf_broadcaster;
 
-
+	double sampling_variance_inflation_m = 0.02;
 
 	while(handoffs_found!=num_of_handoff_samples)
 	{
 		//continue sampling till you find a solution reachable by both arms
 		if(!ros::ok()) {return 0;}
 
-		geometry_msgs::Pose handoffPose = generateRandomPose(); // Replace with sampled pose
+		// geometry_msgs::Pose handoffPose = generateRandomPose(); // Replace with sampled pose
 
+		geometry_msgs::Pose handoffPose =sampleHandoff(startPose.position.x,startPose.position.y,startPose.position.z,
+								goalPose.position.x,goalPose.position.y,goalPose.position.z,sampling_variance_inflation_m);
+ 								
 		tf::StampedTransform handoffTf(geoPose2Transform(handoffPose), ros::Time::now(), "world_link", "object");
 
-		getGraspingPoses(handoffTf, startPose, goalPose);
+		//Get the grasping poses for each robot
+		geometry_msgs::Pose robot1GraspPose;
+		geometry_msgs::Pose robot2GraspPose;
+		getGraspingPoses(handoffTf, robot1GraspPose, robot2GraspPose);
 
 		tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(startPose), ros::Time::now(), "world_link", "pr2_grasp"));
 		tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(goalPose), ros::Time::now(), "world_link", "roman_grasp"));
 		tf_broadcaster.sendTransform(handoffTf);
 
+		if (startRobot == "roman")
+		{
+			getIKServerRequest(robot1GraspPose, "roman_right_arm", ik_srv_robot1);
+			getIKServerRequest(robot2GraspPose, "pr2_right_arm", ik_srv_robot2);
+		}
+		else
+		{
+			getIKServerRequest(robot1GraspPose, "pr2_right_arm", ik_srv_robot1);
+			getIKServerRequest(robot2GraspPose, "roman_right_arm", ik_srv_robot2);
+		}
 		// vizualize pose
 		// viz_marker.pose = handoffPose;
 		// viz_marker.header.stamp = ros::Time::now();
@@ -128,10 +144,10 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 				n_reached++;
 			}
 			
-			else
-			{
-				std::cout<< "FAILED!\n";
-			}
+			// else
+			// {
+			// 	std::cout<< "FAILED!\n";
+			// }
 			
 		}else{
 			std::cout << "Could not call Robot1 IK service\n";
@@ -152,10 +168,10 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 				std::cout << "ROMAN can reach goal!\n";
 				n_reached++;
 			}
-			else
-			{
-				std::cout<< "FAILED!\n";
-			}
+			// else
+			// {
+			// 	std::cout<< "FAILED!\n";
+			// }
 		}	else {
 			std::cout << "Could not call ROMAN IK service\n";
 		}
@@ -171,7 +187,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 		// PR2 planning and execution
 		narms::target_pose robot1_mas_request;
-		robot1_mas_request.request.pose = startPose;
+		robot1_mas_request.request.pose = robot1GraspPose;
 		robot1_mas_request.request.execute_plan=false;
 
 
@@ -191,7 +207,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 		// Roman planning and execution
 		narms::target_pose robot2_mas_request;
-		robot2_mas_request.request.pose = goalPose;
+		robot2_mas_request.request.pose = robot2GraspPose;
 		robot2_mas_request.request.execute_plan=false;
 
 		t2 = ros::WallTime::now();

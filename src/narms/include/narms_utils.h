@@ -44,4 +44,6 @@ geometry_msgs::Pose generateRandomPose();
 
  void visualizeObjectPose(geometry_msgs::Pose pose, std::string prefix);
 
+geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
+	double c_x2, double c_y2, double c_z2, double variance_inflation);
 #endif
