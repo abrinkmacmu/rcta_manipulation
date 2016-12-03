@@ -25,6 +25,8 @@ start_pose_yaw:   0
 narms_planner_id: "RRTkConfigDefault"
 narms_planning_time: 10 # seconds
 
+narms_handoff_samples: 2
+
 
 
 

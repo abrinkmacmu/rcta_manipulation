@@ -116,6 +116,11 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 				n_reached++;
 			}
 			
+			else
+			{
+				std::cout<< "FAILED!\n";
+			}
+			
 		}else{
 			std::cout << "Could not call Robot1 IK service\n";
 		}
@@ -127,13 +132,17 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		t0 = ros::WallTime::now();
 		ik_suc = compute_ik.call(ik_srv_robot2);
 		t1 = ros::WallTime::now();
-		std::cout << "roman compute_IK call time: " << (t1-t0).toSec() << "\n";
+		std::cout << "Robot2 compute_IK call time: " << (t1-t0).toSec() << "\n";
 
 
 		if(ik_suc){
 			if(ik_srv_robot2.response.error_code.val == 1){
 				std::cout << "ROMAN can reach goal!\n";
 				n_reached++;
+			}
+			else
+			{
+				std::cout<< "FAILED!\n";
 			}
 		}	else {
 			std::cout << "Could not call ROMAN IK service\n";
@@ -144,6 +153,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 	if (n_reached >= 2){
 		// Solution is feasible for both PR2 and ROMAN, 
 		// Get the trajectory for this point and evaluate later
+		
 		int n_planned = 0;
 
 		// PR2 planning and execution
@@ -185,6 +195,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 			ros::Duration(2).sleep();
 			robot1_trajectories.push_back(robot1_mas_request.response.traj);
 			robot2_trajectories.push_back(robot2_mas_request.response.traj);
+			++handoffs_found;
 		}
 	}
 
@@ -197,9 +208,9 @@ double score_trajectory(moveit_msgs::RobotTrajectory& traj)
 {	
 	double score = 0;
 	double sum_of_velocities = 0.0;
-	for ( auto& traj_point :traj)
-	{
-		// sum_of_velocities = std::inner_product( v1.begin(), v1.end(), v1.begin(), 0 );
-	}
+	// for ( auto& traj_point :traj)
+	// {
+	// 	// sum_of_velocities = std::inner_product( v1.begin(), v1.end(), v1.begin(), 0 );
+	// }
 	return score;
 }

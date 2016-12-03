@@ -120,10 +120,12 @@ int main(int argc, char* argv[]){
 	mas_srv.request.planner_id = "RRTConnectkConfigDefault";
 	mas_srv.request.planning_time = 5.0;
 
+	int handoff_samples;
+
 	ros::param::get("narms_planner_id", mas_srv.request.planner_id);
 	ros::param::get("narms_planning_time", mas_srv.request.planning_time);
 
-
+	ros::param::get("narms_handoff_samples",handoff_samples);
 	
 	narms::gripper_command gripper_srv;
 	/*
@@ -135,7 +137,14 @@ int main(int argc, char* argv[]){
 
 	// State 2**********************************************************
 	
-	success = computeSampledHandoffPose(startPose, goalPose, startRobot, goalRobot, handoffPose);
+	success = computeSampledHandoffPose(startRobotPose, goalRobotPose, 
+					startRobot, goalRobot, 
+					handoffPose,
+					handoff_samples,
+					computeIK,
+					startRobotMAS,
+					goalRobotMAS
+					);
 	if(!success) { ROS_ERROR("Could not find handoff pose in reasonable timeframe"); return 0;}
 	
 	geometry_msgs::Pose startRobotHandoffPose;
