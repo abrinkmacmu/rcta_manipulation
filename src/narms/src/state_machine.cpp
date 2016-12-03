@@ -73,6 +73,9 @@ int main(int argc, char* argv[]){
 
 	ros::Publisher posessionPub = nh.advertise<std_msgs::String>("arm_possession", 1);
 	std_msgs::String possession;
+	possession.data = "start";
+	posessionPub.publish(possession);
+	ros::spinOnce();
 
 	std::string startRobot;
 	std::string goalRobot;

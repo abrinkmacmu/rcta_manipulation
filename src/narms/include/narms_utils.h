@@ -19,6 +19,8 @@ void printPose(geometry_msgs::Pose p);
 
 tf::Transform geoPose2Transform(geometry_msgs::Pose p);
 
+geometry_msgs::Pose Transform2GeoPose(tf::Transform tf);
+
 geometry_msgs::Pose getPoseFromRosParamRPYDegrees(std::string prefix);
 
 geometry_msgs::Pose Affine2Pose(Eigen::Affine3d A);
@@ -35,6 +37,8 @@ geometry_msgs::Pose generateRandomPose();
  void getIKServerRequest(geometry_msgs::Pose pose, std::string planning_group, moveit_msgs::GetPositionIK& ik_srv);
 
  void getGraspingPoses(const tf::Transform& tf_object, geometry_msgs::Pose& pr2_pose, geometry_msgs::Pose& roman_pose);
+
+ void getObjectPoseFromToolFrame(std::string robot, tf::Transform transform, geometry_msgs::Pose& object_pose);
 
  moveit_msgs::CollisionObject createCollisionBox(
 	geometry_msgs::Pose object_pose,

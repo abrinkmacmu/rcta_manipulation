@@ -103,6 +103,16 @@ target_link_libraries(gripper_server
 add_dependencies(gripper_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
+add_executable(object_node 
+  src/object_node.cpp
+  utils/narms_utils.cpp
+  )
+target_link_libraries(object_node 
+  ${catkin_LIBRARIES}
+)
+add_dependencies(object_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+
 
 
 
