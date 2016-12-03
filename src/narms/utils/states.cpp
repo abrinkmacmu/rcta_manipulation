@@ -71,14 +71,26 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 	moveit_msgs::GetPositionIK ik_srv_robot1;
 	moveit_msgs::GetPositionIK ik_srv_robot2;
 
-	getIKServerRequest(startPose, startRobot, ik_srv_robot1);
-	getIKServerRequest(startPose, startRobot, ik_srv_robot2);
-
+	if (startRobot == "roman")
+	{
+		getIKServerRequest(startPose, "roman_right_arm", ik_srv_robot1);
+		getIKServerRequest(goalPose, "pr2_right_arm", ik_srv_robot2);
+	}
+	else
+	{
+		getIKServerRequest(startPose, "pr2_right_arm", ik_srv_robot1);
+		getIKServerRequest(goalPose, "roman_right_arm", ik_srv_robot2);
+	}
+	
 	// ros::ServiceClient compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("compute_ik");
 
 	// Collection of valid trajectories to be later used for evaluation
 	std::vector<moveit_msgs::RobotTrajectory> robot1_trajectories;
 	std::vector<moveit_msgs::RobotTrajectory> robot2_trajectories;
+
+	tf::TransformBroadcaster tf_broadcaster;
+
+
 
 	while(handoffs_found!=num_of_handoff_samples)
 	{
@@ -91,9 +103,9 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 		getGraspingPoses(handoffTf, startPose, goalPose);
 
-		// tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(pr2_pose), ros::Time::now(), "world_link", "pr2_grasp"));
-		// tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(roman_pose), ros::Time::now(), "world_link", "roman_grasp"));
-		// tf_broadcaster.sendTransform(handoffTf);
+		tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(startPose), ros::Time::now(), "world_link", "pr2_grasp"));
+		tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(goalPose), ros::Time::now(), "world_link", "roman_grasp"));
+		tf_broadcaster.sendTransform(handoffTf);
 
 		// vizualize pose
 		// viz_marker.pose = handoffPose;
@@ -154,6 +166,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		// Solution is feasible for both PR2 and ROMAN, 
 		// Get the trajectory for this point and evaluate later
 		
+		ROS_INFO("SAMPLING POINT FOUND..FINDING PLANS");		
 		int n_planned = 0;
 
 		// PR2 planning and execution
@@ -170,6 +183,10 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		if(robot1_mas_request.response.result == true){
 			std::cout << "PR2 Trajectory Found!\n";
 			n_planned ++;
+		}
+		else
+		{
+			std::cout << "PR2 Trajectory Not Found!\n";
 		}
 
 		// Roman planning and execution
@@ -188,6 +205,10 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 			std::cout << "ROMAN Trajectory Found!\n";
 			n_planned++;
 		}
+		else
+		{
+			std::cout << "ROMAN Trajectory Not Found!\n";
+		}
 
 		if(n_planned >= 2){
 			std::cout << "\nBOTH ARM REACHED OBJECT\n";
@@ -196,6 +217,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 			robot1_trajectories.push_back(robot1_mas_request.response.traj);
 			robot2_trajectories.push_back(robot2_mas_request.response.traj);
 			++handoffs_found;
+			std::cout<<"\nhandoffs_found: "<<handoffs_found;
 		}
 	}
 
