@@ -11,6 +11,9 @@
 
 	<node pkg="narms" type="gripper_server" name="gripper_server" output="screen"/>
 
+
+	<node pkg="narms" type="object_node" name="object_node" output="screen"/>
+
 	<rosparam command="load" file="$(find narms)/config/grasping_poses.yaml" />
 
 	<rosparam command="load" file="$(find narms)/config/planning_problem.yaml" />

@@ -49,6 +49,24 @@ tf::Transform geoPose2Transform(geometry_msgs::Pose p)
     return tf1;
 }
 
+geometry_msgs::Pose Transform2GeoPose(tf::Transform tf)
+{
+	geometry_msgs::Pose p;
+	tf::Vector3 pos = tf.getOrigin();
+	p.position.x = pos[0];
+	p.position.y = pos[1];
+	p.position.z = pos[2];
+
+	tf::Quaternion q = tf.getRotation();
+	p.orientation.x = q.x();
+	p.orientation.y = q.y();
+	p.orientation.z = q.z();
+	p.orientation.w = q.w();
+
+	return p;
+
+}
+
 geometry_msgs::Pose getPoseFromRosParamRPYDegrees(std::string prefix)
 {
 	double x, y, z, roll, pitch, yaw;
@@ -233,6 +251,23 @@ void getGraspingPoses(const tf::Transform& tf_object, geometry_msgs::Pose& pr2_p
 
 	roman_pose = Affine2Pose(A_world_roman_grasp);
 
+}
+
+void getObjectPoseFromToolFrame(std::string robot, tf::Transform transform, geometry_msgs::Pose& object_pose)
+{
+	Eigen::Affine3d A_grasp_world;
+	tf::transformTFToEigen(transform, A_grasp_world);
+
+	tf::Transform tf_grasp_object;
+	Eigen::Affine3d A_grasp_object;
+	tf_grasp_object = geoPose2Transform (getPoseFromRosParamRPYDegrees(robot) );
+	tf::transformTFToEigen(tf_grasp_object, A_grasp_object);
+
+	Eigen::Affine3d A_object_world;
+
+	A_object_world = A_grasp_world * A_grasp_object.inverse();
+
+	object_pose = Affine2Pose(A_object_world);
 }
 
 

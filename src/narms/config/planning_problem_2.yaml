@@ -24,18 +24,5 @@ start_pose_yaw:   0
 # SBPL planners coming soon
 narms_planner_id: "RRTkConfigDefault"
 narms_planning_time: 10 # seconds
-
 narms_handoff_samples: 2
 
-
-
-
-
-
-
-#x:     0
-#y:     0
-#z:     0
-#roll:  0
-#pitch: 0
-#yaw:   0
