@@ -112,10 +112,22 @@ public:
 
 		moveit::planning_interface::MoveGroup::Plan plan;
 		bool suc = group.plan(plan);
+		
 		if(suc && req.execute_plan)
 		{
 			ROS_INFO("MAS: plan found, executing now");
 			group.execute(plan);
+		}
+		else
+		{	
+			if (suc) 
+			{
+				ROS_INFO("PLAN FOUND, NOT EXECUTING");
+			}
+			else
+			{
+				ROS_INFO("MAS: PLAN NOT FOUND");
+			}
 		}
 		res.traj = plan.trajectory_;
 		res.result = suc;

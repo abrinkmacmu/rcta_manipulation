@@ -65,7 +65,8 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 	unsigned int num_of_handoff_samples,
 	ros::ServiceClient& compute_ik,
 	ros::ServiceClient& robot1_move_arm_server,
-	ros::ServiceClient& robot2_move_arm_server)
+	ros::ServiceClient& robot2_move_arm_server,
+	double planning_time)
 {
 	unsigned int handoffs_found = 0;
 	moveit_msgs::GetPositionIK ik_srv_robot1;
@@ -85,12 +86,20 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 	// ros::ServiceClient compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("compute_ik");
 
 	// Collection of valid trajectories to be later used for evaluation
-	std::vector<moveit_msgs::RobotTrajectory> robot1_trajectories;
-	std::vector<moveit_msgs::RobotTrajectory> robot2_trajectories;
+	// std::vector<moveit_msgs::RobotTrajectory> robot1_trajectories;
+	// std::vector<moveit_msgs::RobotTrajectory> robot2_trajectories;
 
 	tf::TransformBroadcaster tf_broadcaster;
 
 	double sampling_variance_inflation_m = 0.02;
+
+	// Best Score till now for a trajectory
+	double best_score = std::numeric_limits<double>::max();
+	combinedTrajectories best_trajectory_pair;
+
+
+	narms::target_pose robot1_mas_request;
+	narms::target_pose robot2_mas_request;
 
 	while(handoffs_found!=num_of_handoff_samples)
 	{
@@ -99,10 +108,10 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 		// geometry_msgs::Pose handoffPose = generateRandomPose(); // Replace with sampled pose
 
-		geometry_msgs::Pose handoffPose =sampleHandoff(startPose.position.x,startPose.position.y,startPose.position.z,
+		geometry_msgs::Pose current_handoff_pose =sampleHandoff(startPose.position.x,startPose.position.y,startPose.position.z,
 								goalPose.position.x,goalPose.position.y,goalPose.position.z,sampling_variance_inflation_m);
  								
-		tf::StampedTransform handoffTf(geoPose2Transform(handoffPose), ros::Time::now(), "world_link", "object");
+		tf::StampedTransform handoffTf(geoPose2Transform(current_handoff_pose), ros::Time::now(), "world_link", "object");
 
 		//Get the grasping poses for each robot
 		geometry_msgs::Pose robot1GraspPose;
@@ -136,7 +145,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		ros::WallTime t0 = ros::WallTime::now();
 		bool ik_suc = compute_ik.call(ik_srv_robot1);
 		ros::WallTime t1 = ros::WallTime::now();
-		std::cout << "Robot1 compute_IK call time: " << (t1-t0).toSec() << "\n";
+		// std::cout << "Robot1 compute_IK call time: " << (t1-t0).toSec() << "\n";
 
 		if(ik_suc){
 			if(ik_srv_robot1.response.error_code.val == 1){
@@ -160,12 +169,12 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		t0 = ros::WallTime::now();
 		ik_suc = compute_ik.call(ik_srv_robot2);
 		t1 = ros::WallTime::now();
-		std::cout << "Robot2 compute_IK call time: " << (t1-t0).toSec() << "\n";
+		// std::cout << "Robot2 compute_IK call time: " << (t1-t0).toSec() << "\n";
 
 
 		if(ik_suc){
 			if(ik_srv_robot2.response.error_code.val == 1){
-				std::cout << "ROMAN can reach goal!\n";
+				std::cout << "Robot2 can reach goal!\n";
 				n_reached++;
 			}
 			// else
@@ -173,12 +182,13 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 			// 	std::cout<< "FAILED!\n";
 			// }
 		}	else {
-			std::cout << "Could not call ROMAN IK service\n";
+			// std::cout << "Could not call Robot2 IK service\n";
 		}
 
 		// Planning and Execution ******************************************************************
 
-	if (n_reached >= 2){
+		if (n_reached >= 2)
+		{
 		// Solution is feasible for both PR2 and ROMAN, 
 		// Get the trajectory for this point and evaluate later
 		
@@ -186,9 +196,10 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		int n_planned = 0;
 
 		// PR2 planning and execution
-		narms::target_pose robot1_mas_request;
+		
 		robot1_mas_request.request.pose = robot1GraspPose;
 		robot1_mas_request.request.execute_plan=false;
+		robot1_mas_request.request.planning_time=planning_time;
 
 
 		ros::WallTime t2 = ros::WallTime::now();
@@ -206,9 +217,10 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		}
 
 		// Roman planning and execution
-		narms::target_pose robot2_mas_request;
+		// narms::target_pose robot2_mas_request;
 		robot2_mas_request.request.pose = robot2GraspPose;
 		robot2_mas_request.request.execute_plan=false;
+		robot2_mas_request.request.planning_time=planning_time;
 
 		t2 = ros::WallTime::now();
 		robot2_move_arm_server.call(robot2_mas_request);
@@ -222,33 +234,73 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 			n_planned++;
 		}
 		else
-		{
-			std::cout << "ROMAN Trajectory Not Found!\n";
-		}
+			{
+				std::cout << "ROMAN Trajectory Not Found!\n";
+			}
 
-		if(n_planned >= 2){
-			std::cout << "\nBOTH ARM REACHED OBJECT\n";
-			printPose(handoffPose);
-			ros::Duration(2).sleep();
-			robot1_trajectories.push_back(robot1_mas_request.response.traj);
-			robot2_trajectories.push_back(robot2_mas_request.response.traj);
-			++handoffs_found;
-			std::cout<<"\nhandoffs_found: "<<handoffs_found;
+		if(n_planned >= 2)
+			{
+				std::cout << "\nBOTH ARM REACHED OBJECT\n";
+				printPose(handoffPose);
+				ros::Duration(2).sleep();
+				// robot1_trajectories.push_back(robot1_mas_request.response.traj);
+				// robot2_trajectories.push_back(robot2_mas_request.response.traj.joint_trajectory.points);
+				++handoffs_found;
+				std::cout<<"\nhandoffs_found: "<<handoffs_found;
+				double score1=score_trajectory(robot1_mas_request.response.traj.joint_trajectory.points);
+				double score2=score_trajectory(robot2_mas_request.response.traj.joint_trajectory.points);
+
+				std::cout<<"\nScores: "<<score1<<" "<<score2;
+
+				if (score1+score2 < best_score)
+				{
+					best_trajectory_pair.robot1_grasp = robot1GraspPose;
+					best_trajectory_pair.robot2_grasp = robot2GraspPose;
+					handoffPose = current_handoff_pose;
+
+				}
+			}
 		}
 	}
 
-	}
+	//Execute the best Trajectory
+
+	// ROS_INFO("Executing Best Trajectories");
+	// robot1_mas_request.request.pose = best_trajectory_pair.robot1_grasp;
+	// robot1_mas_request.request.execute_plan=true;
+	// robot1_move_arm_server.call(robot1_mas_request);
+
+	// robot2_mas_request.request.pose = best_trajectory_pair.robot2_grasp;
+	// robot2_mas_request.request.execute_plan=true;
+	// robot2_move_arm_server.call(robot2_mas_request);
+
+	std::cout<<"\nFinal handoffPose: "<<handoffPose;
+	
 	return true;
 }
 
 
-double score_trajectory(moveit_msgs::RobotTrajectory& traj)
+double score_trajectory(std::vector<trajectory_msgs::JointTrajectoryPoint>& traj)
 {	
 	double score = 0;
 	double sum_of_velocities = 0.0;
-	// for ( auto& traj_point :traj)
-	// {
-	// 	// sum_of_velocities = std::inner_product( v1.begin(), v1.end(), v1.begin(), 0 );
-	// }
+	double sum_of_accelerations = 0.0;
+	for ( auto& traj_point :traj)
+	{	
+		// std::cout<<traj_point<<std::endl;
+
+		auto joint_velocities = traj_point.velocities;
+		auto joint_accelerations = traj_point.accelerations;
+
+		sum_of_velocities+= std::inner_product( joint_velocities.begin(), joint_velocities.end(), joint_velocities.begin(), 0.0 );
+		sum_of_accelerations+= std::inner_product( joint_accelerations.begin(), joint_accelerations.end(), joint_accelerations.begin(), 0.0 );
+		
+		// std::cout<<traj_point;
+		// std::cout<<"\npoint scores = "<<sum_of_velocities<<" "<<sum_of_accelerations;
+
+	}
+
+	std::cout<<"\nSum of velocities: "<<sum_of_velocities<<" , Sum of accelerations: "<<sum_of_accelerations;
+	score = sum_of_accelerations + sum_of_velocities;
 	return score;
 }

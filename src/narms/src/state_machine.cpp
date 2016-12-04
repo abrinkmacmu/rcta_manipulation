@@ -72,6 +72,9 @@ int main(int argc, char* argv[]){
 	std::string startRobot;
 	std::string goalRobot;
 
+	//Load Params
+	double planning_time;
+	ros::param::get("narms_planning_time", planning_time);
 
 	// State 1 *************************************************************
 	success = checkStartandGoalIK(startPose, goalPose, computeIK, startRobot, goalRobot);
@@ -118,12 +121,12 @@ int main(int argc, char* argv[]){
 	*/
 	mas_srv.request.execute_plan = true;
 	mas_srv.request.planner_id = "RRTConnectkConfigDefault";
-	mas_srv.request.planning_time = 5.0;
+	mas_srv.request.planning_time = planning_time;
 
 	int handoff_samples;
 
 	ros::param::get("narms_planner_id", mas_srv.request.planner_id);
-	ros::param::get("narms_planning_time", mas_srv.request.planning_time);
+	// ros::param::get("narms_planning_time", mas_srv.request.planning_time);
 
 	ros::param::get("narms_handoff_samples",handoff_samples);
 	
@@ -143,7 +146,8 @@ int main(int argc, char* argv[]){
 					handoff_samples,
 					computeIK,
 					startRobotMAS,
-					goalRobotMAS
+					goalRobotMAS,
+					planning_time
 					);
 	if(!success) { ROS_ERROR("Could not find handoff pose in reasonable timeframe"); return 0;}
 	
@@ -158,7 +162,7 @@ int main(int argc, char* argv[]){
 	if( goalRobot.compare("pr2") == 0){		goalRobotHandoffPose = pr2_pose; }
 	if( goalRobot.compare("roman") == 0){ goalRobotHandoffPose = roman_pose; }
 
-
+	std::cout<<"\nExecuting Handoff Pose: "<<handoffPose;
 
 	// Linear progression of service calls ******************************************************
 	

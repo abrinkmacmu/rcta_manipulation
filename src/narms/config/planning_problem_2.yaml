@@ -23,7 +23,7 @@ start_pose_yaw:   0
 #see gundam_moveit_config/config/ompl_planning.yaml for possible OMPL planners
 # SBPL planners coming soon
 narms_planner_id: "RRTkConfigDefault"
-narms_planning_time: 20 # seconds
+narms_planning_time: 10 # seconds
 
 narms_handoff_samples: 2
 
