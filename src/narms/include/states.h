@@ -22,6 +22,8 @@ bool checkStartandGoalIK(geometry_msgs::Pose startPose, geometry_msgs::Pose goal
 
 bool computeSampledHandoffPose(geometry_msgs::Pose startPose, 
 								geometry_msgs::Pose goalPose, 
+							geometry_msgs::Pose startBasePose, 
+							geometry_msgs::Pose goalBasePose, 
 								std::string startRobot,
 								std::string goalRobot, 
 								geometry_msgs::Pose& handoffPose,

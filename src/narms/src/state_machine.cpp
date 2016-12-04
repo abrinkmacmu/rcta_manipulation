@@ -5,6 +5,8 @@
 
 #include <moveit_msgs/GetPositionIK.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
+
 
 #include <std_msgs/String.h>
 
@@ -80,6 +82,21 @@ int main(int argc, char* argv[]){
 	std::string startRobot;
 	std::string goalRobot;
 
+	//Find the base position of both arms
+
+	tf::TransformListener listener;
+	tf::StampedTransform roman_tf;
+	tf::StampedTransform pr2_tf;
+	ros::Duration(1.0).sleep(); // wait for tf listener to start up
+	listener.lookupTransform("world","roman/limb_right_link0", ros::Time(0),roman_tf); 
+	listener.lookupTransform("world","pr2/r_shoulder_pan_link", ros::Time(0),pr2_tf); 
+
+	geometry_msgs::Pose pr2_base_joint_pose; 
+	pr2_base_joint_pose=convertPoseViaTransform(pr2_base_joint_pose,pr2_tf);
+
+	geometry_msgs::Pose roman_base_joint_pose; 
+	roman_base_joint_pose=convertPoseViaTransform(roman_base_joint_pose,roman_tf);
+
 	//Load Params
 	double planning_time;
 	ros::param::get("narms_planning_time", planning_time);
@@ -148,7 +165,7 @@ int main(int argc, char* argv[]){
 
 	// State 2**********************************************************
 	
-	success = computeSampledHandoffPose(startRobotPose, goalRobotPose, 
+	success = computeSampledHandoffPose(startPose, goalPose,pr2_base_joint_pose, roman_base_joint_pose, 
 					startRobot, goalRobot, 
 					handoffPose,
 					handoff_samples,

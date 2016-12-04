@@ -60,7 +60,8 @@ bool checkStartandGoalIK(geometry_msgs::Pose startPose, geometry_msgs::Pose goal
 	}
 }
 
-bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pose goalPose, 
+bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pose goalPose,
+				geometry_msgs::Pose startBasePose, geometry_msgs::Pose goalBasePose, 
 	std::string startRobot, std::string goalRobot, geometry_msgs::Pose& handoffPose,
 	unsigned int num_of_handoff_samples,
 	ros::ServiceClient& compute_ik,
@@ -108,8 +109,8 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 		// geometry_msgs::Pose handoffPose = generateRandomPose(); // Replace with sampled pose
 
-		geometry_msgs::Pose current_handoff_pose =sampleHandoff(startPose.position.x,startPose.position.y,startPose.position.z,
-								goalPose.position.x,goalPose.position.y,goalPose.position.z,sampling_variance_inflation_m);
+		geometry_msgs::Pose current_handoff_pose =sampleHandoff(startBasePose.position.x,startBasePose.position.y,startBasePose.position.z,
+								goalBasePose.position.x,goalBasePose.position.y,goalBasePose.position.z,sampling_variance_inflation_m);
  								
 		tf::StampedTransform handoffTf(geoPose2Transform(current_handoff_pose), ros::Time::now(), "world_link", "object");
 
