@@ -136,12 +136,8 @@ int main(int argc, char* argv[]){
 	ros::param::get("narms_planner_id", mas_srv.request.planner_id);
 	// ros::param::get("narms_planning_time", mas_srv.request.planning_time);
 
-<<<<<<< HEAD
 	ros::param::get("narms_handoff_samples",handoff_samples);
-	
-=======
 
->>>>>>> f41ac297eb0995072ab173aae616a04e10c092c6
 	narms::gripper_command gripper_srv;
 	/*
 	float32 pr2_command
