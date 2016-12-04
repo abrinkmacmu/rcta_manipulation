@@ -137,7 +137,7 @@ int main(int argc, char* argv[]){
 	bool result
 	*/
 	mas_srv.request.execute_plan = true;
-	mas_srv.request.planner_id = "RRTConnectkConfigDefault";
+	mas_srv.request.planner_id = "RRTkConfigDefault";
 	mas_srv.request.planning_time = planning_time;
 
 	int handoff_samples;
