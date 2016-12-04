@@ -86,7 +86,8 @@ public:
 
 	bool handleRequest(narms::target_pose::Request &req, narms::target_pose::Response &res)
 	{
-
+		ROS_INFO("new Move arm server request received: ");
+		printPose(req.pose);
 		updateCollisionObjects();
 
 		group.setStartState(*(group.getCurrentState()) );

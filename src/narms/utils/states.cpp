@@ -116,22 +116,27 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		//Get the grasping poses for each robot
 		geometry_msgs::Pose robot1GraspPose;
 		geometry_msgs::Pose robot2GraspPose;
-		getGraspingPoses(handoffTf, robot1GraspPose, robot2GraspPose);
+
+		if (startRobot == "roman")
+		{
+			getGraspingPoses(handoffTf, robot2GraspPose, robot1GraspPose);
+			getIKServerRequest(robot1GraspPose, "roman_right_arm", ik_srv_robot1);
+			getIKServerRequest(robot2GraspPose, "pr2_right_arm", ik_srv_robot2);
+			
+		}
+		else
+		{
+			getGraspingPoses(handoffTf, robot1GraspPose, robot2GraspPose);
+			getIKServerRequest(robot1GraspPose, "pr2_right_arm", ik_srv_robot1);
+			getIKServerRequest(robot2GraspPose, "roman_right_arm", ik_srv_robot2);
+
+		}
+		
 
 		tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(startPose), ros::Time::now(), "world_link", "pr2_grasp"));
 		tf_broadcaster.sendTransform(tf::StampedTransform(geoPose2Transform(goalPose), ros::Time::now(), "world_link", "roman_grasp"));
 		tf_broadcaster.sendTransform(handoffTf);
 
-		if (startRobot == "roman")
-		{
-			getIKServerRequest(robot1GraspPose, "roman_right_arm", ik_srv_robot1);
-			getIKServerRequest(robot2GraspPose, "pr2_right_arm", ik_srv_robot2);
-		}
-		else
-		{
-			getIKServerRequest(robot1GraspPose, "pr2_right_arm", ik_srv_robot1);
-			getIKServerRequest(robot2GraspPose, "roman_right_arm", ik_srv_robot2);
-		}
 		// vizualize pose
 		// viz_marker.pose = handoffPose;
 		// viz_marker.header.stamp = ros::Time::now();
