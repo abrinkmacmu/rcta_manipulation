@@ -154,6 +154,27 @@ geometry_msgs::Pose generateRandomPose()
 	return generatePose(x, y, z, roll, pitch, yaw);
 }
 
+geometry_msgs::Pose addLowVarianceNoiseFromROSParamRPYDegrees(std::string prefix)
+{
+
+	double x, y, z, roll, pitch, yaw;
+	ros::param::get(prefix+"_x", x);
+	ros::param::get(prefix+"_y", y);
+	ros::param::get(prefix+"_z", z);
+	ros::param::get(prefix+"_roll", roll);
+	ros::param::get(prefix+"_pitch", pitch);
+	ros::param::get(prefix+"_yaw", yaw);
+
+	x += 0.1*(std::rand() / double(RAND_MAX) - 0.5);
+	y += 0.1*(std::rand() / double(RAND_MAX) - 0.5);
+	z += 0.1*(std::rand() / double(RAND_MAX) - 0.5);
+	roll += 0.087*(std::rand() / double(RAND_MAX) -0.5);
+	pitch += 0.087*(std::rand() / double(RAND_MAX) -0.5);
+	yaw += 0.087*(std::rand() / double(RAND_MAX) -0.5);
+
+	return generatePose(x, y, z, roll, pitch, yaw);
+}
+
 
  void getIKServerRequest(geometry_msgs::Pose pose, std::string planning_group, moveit_msgs::GetPositionIK& ik_srv)
 {
@@ -325,12 +346,12 @@ geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
 	double y_center_m = 0.5*(c_y1 + c_y2);
 	double z_center_m = 0.5*(c_z1 + c_z2);
 
-	double sampling_variance = std::sqrt(std::pow(c_x1-c_x2,2)+std::pow(c_y1-c_y2,2)+std::pow(c_z1-c_z2,2))/3.0;
+	double sampling_variance = std::sqrt(std::pow(c_x1-c_x2,2)+std::pow(c_y1-c_y2,2)+std::pow(c_z1-c_z2,2))/6.0;
 
 	//Variance inflation is a number between [0,1], signifying how percentage inflated the sampling should be
 	sampling_variance = sampling_variance * (1+variance_inflation);
 
-	std::cout<<"\nSampling Variance :"<<sampling_variance<<std::endl;
+	//std::cout<<"\nSampling Variance :"<<sampling_variance<<std::endl;
 
 	x_center_m = sample_from_gaussian(x_center_m,sampling_variance);
 	y_center_m = sample_from_gaussian(y_center_m,sampling_variance);

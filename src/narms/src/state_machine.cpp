@@ -88,14 +88,14 @@ int main(int argc, char* argv[]){
 	tf::StampedTransform roman_tf;
 	tf::StampedTransform pr2_tf;
 	ros::Duration(1.0).sleep(); // wait for tf listener to start up
-	listener.lookupTransform("world","roman/limb_right_link0", ros::Time(0),roman_tf); 
-	listener.lookupTransform("world","pr2/r_shoulder_pan_link", ros::Time(0),pr2_tf); 
+	listener.lookupTransform("world_link","roman/limb_right_link0", ros::Time(0),roman_tf); 
+	listener.lookupTransform("world_link","pr2/r_shoulder_pan_link", ros::Time(0),pr2_tf); 
 
 	geometry_msgs::Pose pr2_base_joint_pose; 
-	pr2_base_joint_pose=convertPoseViaTransform(pr2_base_joint_pose,pr2_tf);
+	pr2_base_joint_pose=Transform2GeoPose(pr2_tf);
 
 	geometry_msgs::Pose roman_base_joint_pose; 
-	roman_base_joint_pose=convertPoseViaTransform(roman_base_joint_pose,roman_tf);
+	roman_base_joint_pose=Transform2GeoPose(roman_tf);
 
 	//Load Params
 	double planning_time;
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]){
 	*/
 
 	// State 2**********************************************************
-	
+	auto t0 = ros::Time::now();
 	success = computeSampledHandoffPose(startPose, goalPose,pr2_base_joint_pose, roman_base_joint_pose, 
 					startRobot, goalRobot, 
 					handoffPose,
@@ -174,6 +174,8 @@ int main(int argc, char* argv[]){
 					goalRobotMAS,
 					planning_time
 					);
+	auto t1 = ros::Time::now();
+	std::cout << "Handoff Time: " << (t1-t0).toSec() << "\n";
 	if(!success) { ROS_ERROR("Could not find handoff pose in reasonable timeframe"); return 0;}
 	
 	geometry_msgs::Pose startRobotHandoffPose;

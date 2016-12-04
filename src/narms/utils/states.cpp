@@ -155,7 +155,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 		if(ik_suc){
 			if(ik_srv_robot1.response.error_code.val == 1){
-				std::cout << "Robot1 can reach goal!\n";
+				//std::cout << "Robot1 can reach goal!\n";
 				n_reached++;
 			}
 			
@@ -180,7 +180,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 		if(ik_suc){
 			if(ik_srv_robot2.response.error_code.val == 1){
-				std::cout << "Robot2 can reach goal!\n";
+				//std::cout << "Robot2 can reach goal!\n";
 				n_reached++;
 			}
 			// else
@@ -188,7 +188,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 			// 	std::cout<< "FAILED!\n";
 			// }
 		}	else {
-			// std::cout << "Could not call Robot2 IK service\n";
+			 std::cout << "Could not call Robot2 IK service\n";
 		}
 
 		// Planning and Execution ******************************************************************
@@ -214,12 +214,12 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 		std::cout << "pr2 move_arm_server call time: " << (t3-t2).toSec() << "\n";
 
 		if(robot1_mas_request.response.result == true){
-			std::cout << "PR2 Trajectory Found!\n";
+			//std::cout << "PR2 Trajectory Found!\n";
 			n_planned ++;
 		}
 		else
 		{
-			std::cout << "PR2 Trajectory Not Found!\n";
+			//std::cout << "PR2 Trajectory Not Found!\n";
 		}
 
 		// Roman planning and execution
@@ -236,19 +236,19 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 
 		if(robot2_mas_request.response.result == true)
 		{
-			std::cout << "ROMAN Trajectory Found!\n";
+			//std::cout << "ROMAN Trajectory Found!\n";
 			n_planned++;
 		}
 		else
 			{
-				std::cout << "ROMAN Trajectory Not Found!\n";
+				//std::cout << "ROMAN Trajectory Not Found!\n";
 			}
 
 		if(n_planned >= 2)
 			{
-				std::cout << "\nBOTH ARM REACHED OBJECT\n";
+				//std::cout << "\nBOTH ARM REACHED OBJECT\n";
 				printPose(handoffPose);
-				ros::Duration(2).sleep();
+				//ros::Duration(2).sleep();
 				// robot1_trajectories.push_back(robot1_mas_request.response.traj);
 				// robot2_trajectories.push_back(robot2_mas_request.response.traj.joint_trajectory.points);
 				++handoffs_found;
@@ -263,6 +263,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 					best_trajectory_pair.robot1_grasp = robot1GraspPose;
 					best_trajectory_pair.robot2_grasp = robot2GraspPose;
 					handoffPose = current_handoff_pose;
+					best_score = score1+score2;
 
 				}
 			}
@@ -281,6 +282,7 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 	// robot2_move_arm_server.call(robot2_mas_request);
 
 	std::cout<<"\nFinal handoffPose: "<<handoffPose;
+	std::cout << "\nBest score: " << best_score;
 	
 	return true;
 }
