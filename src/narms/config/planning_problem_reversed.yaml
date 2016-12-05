@@ -1,10 +1,10 @@
-shelf_x: 2.25
+shelf_x: 1.5
 shelf_y: 2.25
-shelf_z: 0.75
+shelf_z: 0.6
 
 shelf_box_x: 1.0
 shelf_box_y: 1.0
-shelf_box_z: 1.5
+shelf_box_z: 1.2
 
 goal_pose_x:     1.0
 goal_pose_y:     0.3
@@ -24,4 +24,6 @@ start_pose_yaw:   0
 # SBPL planners coming soon
 narms_planner_id: "RRTkConfigDefault"
 narms_planning_time: 10 # seconds
+
+narms_handoff_samples: 1
 

@@ -33,6 +33,7 @@ geometry_msgs::Pose generatePose(double x, double y, double z, double roll, doub
 
 geometry_msgs::Pose generateRandomPose();
 
+geometry_msgs::Pose addLowVarianceNoiseFromROSParamRPYDegrees(std::string prefix);
 
  void getIKServerRequest(geometry_msgs::Pose pose, std::string planning_group, moveit_msgs::GetPositionIK& ik_srv);
 
@@ -48,4 +49,6 @@ geometry_msgs::Pose generateRandomPose();
 
  void visualizeObjectPose(geometry_msgs::Pose pose, std::string prefix);
 
+geometry_msgs::Pose sampleHandoff(double c_x1,double c_y1,double c_z1,
+	double c_x2, double c_y2, double c_z2, double variance_inflation);
 #endif
