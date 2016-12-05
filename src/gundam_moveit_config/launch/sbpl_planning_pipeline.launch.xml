@@ -17,12 +17,12 @@
 
     <rosparam command="load" file="$(find gundam_moveit_config)/config/sbpl_planning.yaml"/>
     <group ns="roman_right_arm">
-        <param name="mprim_filename" value="$(find rcta)/config/robots/roman/right_arm.mprim"/>
+       <!-- <param name="mprim_filename" value="$(find rcta)/config/robots/roman/right_arm.mprim"/> -->
+       <param name="mprim_filename" value="$(find rcta)/config/robots/andalite/pr2_with_torso.mprim"/>
     </group>
 
     <group ns="pr2_right_arm">
-        <param name="mprim_filename" value="$(find rcta)/config/robots/roman/right_arm.mprim"/>
-        <!-- TODO FIGURE OUT CORRECT MPRIM -->
+        <param name="mprim_filename" value="$(find rcta)/config/robots/andalite/pr2_with_torso.mprim"/>
     </group>
 
 </launch>

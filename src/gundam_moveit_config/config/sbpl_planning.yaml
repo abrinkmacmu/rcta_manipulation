@@ -11,13 +11,14 @@ roman_right_arm:
 
     # angular resolution of each active joint variable
     discretization:
-        roman/limb_right_joint1: 0.017453292519943
-        roman/limb_right_joint2: 0.017453292519943
-        roman/limb_right_joint3: 0.017453292519943
-        roman/limb_right_joint4: 0.017453292519943
-        roman/limb_right_joint5: 0.017453292519943
-        roman/limb_right_joint6: 0.017453292519943
-        roman/limb_right_joint7: 0.017453292519943
+        roman_torso_joint1:      0.017453292519943
+        roman_limb_right_joint1: 0.017453292519943
+        roman_limb_right_joint2: 0.017453292519943
+        roman_limb_right_joint3: 0.017453292519943
+        roman_limb_right_joint4: 0.017453292519943
+        roman_limb_right_joint5: 0.017453292519943
+        roman_limb_right_joint6: 0.017453292519943
+        roman_limb_right_joint7: 0.017453292519943
 
     ### Action Parameters ###
 
@@ -46,14 +47,15 @@ pr2_right_arm:
 
     # angular resolution of each active joint variable
     discretization:
-      pr2/torso_lift_joint:       0.02
-      pr2/r_shoulder_pan_joint:   0.017453292519943
-      pr2/r_elbow_flex_joint:     0.017453292519943
-      pr2/r_forearm_roll_joint:   0.017453292519943
-      pr2/r_shoulder_lift_joint:  0.017453292519943
-      pr2/r_upper_arm_roll_joint: 0.017453292519943
-      pr2/r_wrist_flex_joint:     0.017453292519943
-      pr2/r_wrist_roll_joint:     0.017453292519943
+      pr2_torso_lift_joint:       0.02
+      pr2_r_shoulder_pan_joint:   0.017453292519943
+      pr2_r_shoulder_lift_joint:  0.017453292519943
+      pr2_r_upper_arm_roll_joint: 0.017453292519943
+      pr2_r_elbow_flex_joint:     0.017453292519943
+      pr2_r_forearm_roll_joint:   0.017453292519943      
+      pr2_r_wrist_flex_joint:     0.017453292519943
+      pr2_r_wrist_roll_joint:     0.017453292519943
+
 
     ### Action Parameters ###
 

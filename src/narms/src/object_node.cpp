@@ -51,14 +51,14 @@ int main(int argc, char*argv[])
 		}else if (g_robot.compare("pr2") == 0){
 			
 	    try{
-	      listener.lookupTransform("world_link", "pr2/r_gripper_tool_frame", ros::Time(0), transform);
+	      listener.lookupTransform("world_link", "pr2_r_gripper_tool_frame", ros::Time(0), transform);
 	    }catch(...){}
 
 			getObjectPoseFromToolFrame(g_robot, transform, viz_marker.pose);
 		}else if (g_robot.compare("roman") == 0){
 			
 	    try{
-	      listener.lookupTransform("world_link", "roman/limb_right_tool0", ros::Time(0), transform);
+	      listener.lookupTransform("world_link", "roman_limb_right_tool0", ros::Time(0), transform);
 	    }catch(...){}
 
 			getObjectPoseFromToolFrame(g_robot, transform, viz_marker.pose);

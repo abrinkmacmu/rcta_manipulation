@@ -193,7 +193,7 @@ int main(int argc, char*argv[])
 	sensor_msgs::JointState pr2_js;
 	moveit_msgs::PositionIKRequest pr2_ik_request;
 	moveit_msgs::GetPositionIK pr2_ik_srv;
-	ros::ServiceClient pr2_compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("pr2/compute_ik");
+	ros::ServiceClient pr2_compute_ik = nh.serviceClient<moveit_msgs::GetPositionIK>("pr2_compute_ik");
 	
 	
 	// Roman Specific Messages
@@ -269,7 +269,7 @@ int main(int argc, char*argv[])
 	tf::StampedTransform pr2_tf;
 	ros::Duration(1.0).sleep(); // wait for tf listener to start up
 	listener.lookupTransform("world","limb_right_link0", ros::Time(0),roman_tf); 
-	listener.lookupTransform("world","pr2/r_shoulder_pan_link", ros::Time(0),pr2_tf); 
+	listener.lookupTransform("world","pr2_r_shoulder_pan_link", ros::Time(0),pr2_tf); 
 
 
 	geometry_msgs::Pose pr2_pose; 

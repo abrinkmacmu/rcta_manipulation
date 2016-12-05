@@ -1,6 +1,6 @@
 <launch>
 
-<node pkg="tf" type="static_transform_publisher" name="pr2_base_pub" args="0 1.5 0 0 0 0 world pr2/base_footprint 10"/>
+<node pkg="tf" type="static_transform_publisher" name="pr2_base_pub" args="0 1.5 0 0 0 0 world pr2_base_footprint 10"/>
 
 <node pkg="tf" type="static_transform_publisher" name="roman_base_pub" args="0 0 0 1.57 0 0 world abs_nwu 10"/>
 

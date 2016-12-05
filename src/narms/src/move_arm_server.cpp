@@ -53,7 +53,7 @@ public:
 		service = nh.advertiseService(prefix + "_move_arm_server", &MoveArmServer::handleRequest,this);
 		
 		ROS_INFO("Group Pose Reference Frame: %s" , group.getPoseReferenceFrame().c_str());
-		//group.setPoseReferenceFrame("pr2/odom_combined");
+		//group.setPoseReferenceFrame("pr2_odom_combined");
 		spinner.start();
 
 		//std::cout << "Sanity Check the robot model\n";
@@ -90,10 +90,12 @@ public:
 		printPose(req.pose);
 		updateCollisionObjects();
 
+		group.setWorkspace(-1,-1,0,2,4,2.5);
+
 		group.setStartState(*(group.getCurrentState()) );
 		std::string planner_id;
 		if(req.planner_id.compare("")== 0){
-			planner_id = "RRTkConfigDefault";
+			planner_id = "arastar";
 		}else{
 			planner_id = req.planner_id;
 		}
@@ -124,12 +126,41 @@ public:
 			if (suc) 
 			{
 				ROS_INFO("PLAN FOUND, NOT EXECUTING");
+
+
+
 			}
 			else
 			{
 				ROS_INFO("MAS: PLAN NOT FOUND");
 			}
 		}
+
+		if(suc)
+		{
+			ros::Duration t0 = plan.trajectory_.joint_trajectory.points[0].time_from_start;
+			auto jstates_old = plan.trajectory_.joint_trajectory.points[0].positions;
+			int n_joints = jstates_old.size();
+
+			for(int i = 1; i < plan.trajectory_.joint_trajectory.points.size(); i++)
+			{
+				ros::Duration t1 = plan.trajectory_.joint_trajectory.points[i].time_from_start;
+				double dt = (t1-t0).toSec();
+				//std::cout << "point " << i << " has dt: " << dt << "\n";
+				auto jstates_new = plan.trajectory_.joint_trajectory.points[i].positions;
+				plan.trajectory_.joint_trajectory.points[i].velocities.clear();
+				plan.trajectory_.joint_trajectory.points[i].velocities.resize(n_joints);
+				for(int j = 0; j < n_joints; j++)
+				{
+					plan.trajectory_.joint_trajectory.points[i].velocities[j] = (jstates_new[j] - jstates_old[j]) / dt;
+				}
+				jstates_old = jstates_new;
+				t0 = t1;
+			}
+			std::cout << plan.trajectory_ << "\n";
+			
+		}
+
 		res.traj = plan.trajectory_;
 		res.result = suc;
 		return true;

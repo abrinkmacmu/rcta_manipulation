@@ -184,23 +184,23 @@ geometry_msgs::Pose addLowVarianceNoiseFromROSParamRPYDegrees(std::string prefix
 	if(planning_group.compare("pr2_right_arm")==0)
 	{
 		js.name = {
-			"pr2/r_shoulder_pan_joint",
-			"pr2/r_shoulder_lift_joint",
-			"pr2/r_upper_arm_roll_joint",
-			"pr2/r_elbow_flex_joint",
-			"pr2/r_forearm_roll_joint",
-			"pr2/r_wrist_flex_joint",
-			"pr2/r_wrist_roll_joint"
+			"pr2_r_shoulder_pan_joint",
+			"pr2_r_shoulder_lift_joint",
+			"pr2_r_upper_arm_roll_joint",
+			"pr2_r_elbow_flex_joint",
+			"pr2_r_forearm_roll_joint",
+			"pr2_r_wrist_flex_joint",
+			"pr2_r_wrist_roll_joint"
 		};
 	}else{
 		js.name= {
-			"roman/limb_right_joint1",
-			"roman/limb_right_joint2",
-			"roman/limb_right_joint3",
-			"roman/limb_right_joint4",
-			"roman/limb_right_joint5",
-			"roman/limb_right_joint6",
-			"roman/limb_right_joint7"
+			"roman_limb_right_joint1",
+			"roman_limb_right_joint2",
+			"roman_limb_right_joint3",
+			"roman_limb_right_joint4",
+			"roman_limb_right_joint5",
+			"roman_limb_right_joint6",
+			"roman_limb_right_joint7"
 		};
 	}
 

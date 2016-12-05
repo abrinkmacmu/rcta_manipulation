@@ -23,8 +23,8 @@ public:
 		joint_states_.header.stamp = ros::Time::now();
 		joint_states_.position = {pr2_value_, roman_value_};
 		joint_states_.name = {
-			"pr2/r_gripper_l_finger_joint",
-			"roman/limb_right_finger_middle_joint_1"
+			"pr2_r_gripper_l_finger_joint",
+			"roman_limb_right_finger_middle_joint_1"
 			};
 
 		gripper_pub_ = nh_.advertise<sensor_msgs::JointState>("move_group/fake_controller_joint_states", 10);

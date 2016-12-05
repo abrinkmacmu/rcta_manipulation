@@ -88,8 +88,8 @@ int main(int argc, char* argv[]){
 	tf::StampedTransform roman_tf;
 	tf::StampedTransform pr2_tf;
 	ros::Duration(1.0).sleep(); // wait for tf listener to start up
-	listener.lookupTransform("world_link","roman/limb_right_link0", ros::Time(0),roman_tf); 
-	listener.lookupTransform("world_link","pr2/r_shoulder_pan_link", ros::Time(0),pr2_tf); 
+	listener.lookupTransform("world_link","roman_limb_right_link0", ros::Time(0),roman_tf); 
+	listener.lookupTransform("world_link","pr2_r_shoulder_pan_link", ros::Time(0),pr2_tf); 
 
 	geometry_msgs::Pose pr2_base_joint_pose; 
 	pr2_base_joint_pose=Transform2GeoPose(pr2_tf);
@@ -145,7 +145,7 @@ int main(int argc, char* argv[]){
 	bool result
 	*/
 	mas_srv.request.execute_plan = true;
-	mas_srv.request.planner_id = "RRTkConfigDefault";
+	mas_srv.request.planner_id = "ARAConfigDefault";
 	mas_srv.request.planning_time = planning_time;
 
 	int handoff_samples;

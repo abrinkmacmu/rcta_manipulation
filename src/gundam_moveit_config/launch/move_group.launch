@@ -22,7 +22,7 @@
 
   <!-- Planning Functionality -->
   <include ns="move_group" file="$(find gundam_moveit_config)/launch/planning_pipeline.launch.xml">
-    <arg name="pipeline" value="ompl"/>
+    <arg name="pipeline" value="sbpl"/>
   </include>
 
   <!-- Trajectory Execution Functionality -->

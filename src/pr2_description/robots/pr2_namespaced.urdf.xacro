@@ -36,7 +36,7 @@
 
   <!-- Included to put PR2 links and joints into its own namespace -->
 
-  <xacro:arg name="namespace" default="pr2/"/>
+  <xacro:arg name="namespace" default="pr2_"/>
 
   <!-- Now we can start using the macros included above to define the actual PR2 -->
 

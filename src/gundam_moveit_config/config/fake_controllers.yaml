@@ -1,30 +1,30 @@
 controller_list:
   - name: fake_pr2_right_arm_controller
     joints:
-      - pr2/torso_lift_joint
-      - pr2/r_shoulder_pan_joint
-      - pr2/r_shoulder_lift_joint
-      - pr2/r_upper_arm_roll_joint
-      - pr2/r_elbow_flex_joint
-      - pr2/r_forearm_roll_joint
-      - pr2/r_wrist_flex_joint
-      - pr2/r_wrist_roll_joint
+      - pr2_torso_lift_joint
+      - pr2_r_shoulder_pan_joint
+      - pr2_r_shoulder_lift_joint
+      - pr2_r_upper_arm_roll_joint
+      - pr2_r_elbow_flex_joint
+      - pr2_r_forearm_roll_joint
+      - pr2_r_wrist_flex_joint
+      - pr2_r_wrist_roll_joint
   - name: fake_pr2_right_arm_and_torso_controller
     joints:
-      - pr2/r_shoulder_pan_joint
-      - pr2/r_shoulder_lift_joint
-      - pr2/r_upper_arm_roll_joint
-      - pr2/r_elbow_flex_joint
-      - pr2/r_forearm_roll_joint
-      - pr2/r_wrist_flex_joint
-      - pr2/r_wrist_roll_joint
+      - pr2_r_shoulder_pan_joint
+      - pr2_r_shoulder_lift_joint
+      - pr2_r_upper_arm_roll_joint
+      - pr2_r_elbow_flex_joint
+      - pr2_r_forearm_roll_joint
+      - pr2_r_wrist_flex_joint
+      - pr2_r_wrist_roll_joint
   - name: fake_roman_right_arm_controller
     joints:
-      - roman/torso_joint1
-      - roman/limb_right_joint1
-      - roman/limb_right_joint2
-      - roman/limb_right_joint3
-      - roman/limb_right_joint4
-      - roman/limb_right_joint5
-      - roman/limb_right_joint6
-      - roman/limb_right_joint7
+      - roman_torso_joint1
+      - roman_limb_right_joint1
+      - roman_limb_right_joint2
+      - roman_limb_right_joint3
+      - roman_limb_right_joint4
+      - roman_limb_right_joint5
+      - roman_limb_right_joint6
+      - roman_limb_right_joint7
