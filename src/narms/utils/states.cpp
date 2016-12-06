@@ -288,27 +288,75 @@ bool computeSampledHandoffPose(geometry_msgs::Pose startPose, geometry_msgs::Pos
 }
 
 
-double score_trajectory(std::vector<trajectory_msgs::JointTrajectoryPoint>& traj)
-{	
-	double score = 0;
-	double sum_of_velocities = 0.0;
-	double sum_of_accelerations = 0.0;
-	for ( auto& traj_point :traj)
-	{	
-		// std::cout<<traj_point<<std::endl;
+// double score_trajectory(std::vector<trajectory_msgs::JointTrajectoryPoint>& traj)
+// {	
+// 	double score = 0;
+// 	double sum_of_velocities = 0.0;
+// 	double sum_of_accelerations = 0.0;
+// 	for ( auto& traj_point :traj)
+// 	{	
+// 		// std::cout<<traj_point<<std::endl;
 
-		auto joint_velocities = traj_point.velocities;
-		auto joint_accelerations = traj_point.accelerations;
+// 		auto joint_velocities = traj_point.velocities;
+// 		auto joint_accelerations = traj_point.accelerations;
 
-		sum_of_velocities+= std::inner_product( joint_velocities.begin(), joint_velocities.end(), joint_velocities.begin(), 0.0 );
-		sum_of_accelerations+= std::inner_product( joint_accelerations.begin(), joint_accelerations.end(), joint_accelerations.begin(), 0.0 );
+// 		sum_of_velocities+= std::inner_product( joint_velocities.begin(), joint_velocities.end(), joint_velocities.begin(), 0.0 );
+// 		sum_of_accelerations+= std::inner_product( joint_accelerations.begin(), joint_accelerations.end(), joint_accelerations.begin(), 0.0 );
 		
-		// std::cout<<traj_point;
-		// std::cout<<"\npoint scores = "<<sum_of_velocities<<" "<<sum_of_accelerations;
+// 		// std::cout<<traj_point;
+// 		// std::cout<<"\npoint scores = "<<sum_of_velocities<<" "<<sum_of_accelerations;
 
-	}
+// 	}
 
-	std::cout<<"\nSum of velocities: "<<sum_of_velocities<<" , Sum of accelerations: "<<sum_of_accelerations;
-	score = sum_of_accelerations + sum_of_velocities;
-	return score;
+// 	std::cout<<"\nSum of velocities: "<<sum_of_velocities<<" , Sum of accelerations: "<<sum_of_accelerations;
+// 	score = sum_of_accelerations + sum_of_velocities;
+// 	return score;
+// }
+
+
+
+double score_trajectory(std::vector<trajectory_msgs::JointTrajectoryPoint>& traj)
+{    
+    double score = 0;
+    double sum_of_velocities = 0.0;
+    double sum_of_accelerations = 0.0;
+    
+    double discretization = 0.017453292519943;
+    for ( size_t idx = 1; idx<traj.size();++idx)
+    {    
+
+
+        auto prev_pt = traj[idx-1];
+        auto curr_pt = traj[idx];
+
+
+        for (size_t joint_idx=0; joint_idx<prev_pt.positions.size();++joint_idx)
+        {
+            double joint_travel = std::fabs(curr_pt.positions[joint_idx]-prev_pt.positions[joint_idx]);
+            joint_travel/=discretization;
+            sum_of_velocities+=joint_travel*std::pow(curr_pt.velocities[joint_idx],2);
+            sum_of_accelerations+=joint_travel*std::pow(curr_pt.accelerations[joint_idx],2);
+        }
+        // std::cout<<traj_point<<std::endl;
+
+
+        // auto joint_velocities = traj_point.velocities;
+        // auto joint_accelerations = traj_point.accelerations;
+
+
+        // sum_of_velocities+= std::inner_product( joint_velocities.begin(), joint_velocities.end(), joint_velocities.begin(), 0.0 );
+        // sum_of_accelerations+= std::inner_product( joint_accelerations.begin(), joint_accelerations.end(), joint_accelerations.begin(), 0.0 );
+        
+        // std::cout<<traj_point;
+        std::cout<<"\npoint scores v= "<<sum_of_velocities<<", acc= "<<sum_of_accelerations;
+
+
+    }
+
+
+    std::cout<<"\nSum of velocities: "<<sum_of_velocities<<" , Sum of accelerations: "<<sum_of_accelerations;
+    score = sum_of_accelerations + sum_of_velocities;
+    return score;
 }
+
+
