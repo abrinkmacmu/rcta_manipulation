@@ -140,7 +140,9 @@ public:
 		{
 			ros::Duration t0 = plan.trajectory_.joint_trajectory.points[0].time_from_start;
 			auto jstates_old = plan.trajectory_.joint_trajectory.points[0].positions;
+			std::vector<double> vstates_old{0,0,0,0,0,0,0,0};
 			int n_joints = jstates_old.size();
+			std::cout << "vstates: " << vstates_old.size() << "  jstates: " << n_joints << "\n";
 
 			for(int i = 1; i < plan.trajectory_.joint_trajectory.points.size(); i++)
 			{
@@ -154,6 +156,16 @@ public:
 				{
 					plan.trajectory_.joint_trajectory.points[i].velocities[j] = (jstates_new[j] - jstates_old[j]) / dt;
 				}
+
+				auto vstates_new = plan.trajectory_.joint_trajectory.points[i].velocities;
+				plan.trajectory_.joint_trajectory.points[i].accelerations.clear();
+				plan.trajectory_.joint_trajectory.points[i].accelerations.resize(n_joints);
+				for(int j = 0; j < n_joints; j++)
+				{
+					plan.trajectory_.joint_trajectory.points[i].accelerations[j] = (vstates_new[j]-vstates_old[j]) / dt;
+				}
+
+				vstates_old = vstates_new;
 				jstates_old = jstates_new;
 				t0 = t1;
 			}

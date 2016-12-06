@@ -26,4 +26,4 @@ narms_planner_id: "arastar"
 narms_planning_time: 20 # seconds
 
 
-narms_handoff_samples: 1
+narms_handoff_samples: 10
