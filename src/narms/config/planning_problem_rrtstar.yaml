@@ -26,4 +26,4 @@ narms_planner_id: "RRTstarkConfigDefault"
 narms_planning_time: 10 # seconds
 
 
-narms_handoff_samples: 1
+narms_handoff_samples: 10

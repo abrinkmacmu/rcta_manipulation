@@ -93,7 +93,7 @@ public:
 		group.setStartState(*(group.getCurrentState()) );
 		std::string planner_id;
 		if(req.planner_id.compare("")== 0){
-			planner_id = "RRTkConfigDefault";
+			planner_id = "RRTstarkConfigDefault";
 		}else{
 			planner_id = req.planner_id;
 		}
