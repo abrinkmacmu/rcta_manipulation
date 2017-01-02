@@ -72,7 +72,7 @@ include_directories(
 ######################################
 
 add_executable(state_machine 
-  src/state_machine.cpp
+  src/state_machine_impl.cpp
   utils/narms_utils.cpp
   utils/states.cpp
   )
@@ -134,3 +134,12 @@ target_link_libraries(move_arm_server_test
   ${catkin_LIBRARIES}
 )
 add_dependencies(move_arm_server_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(smach_count_test 
+  src/test/smach_count_test.cpp
+  src/state_machine.cpp
+  )
+target_link_libraries(smach_count_test 
+  ${catkin_LIBRARIES}
+)
+add_dependencies(smach_count_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -1,45 +1,64 @@
 #ifndef __state__machine__
 #define __state__machine__
 
-namespace smach{
+#include <iostream>
+#include <string>
+#include <vector>
+#include <map>
 
-enum SmachPrintEvent {
-	States,
-	All,
-}
+namespace smach {
 
-enum Transitions {
+
+enum Transition {
 	Failure,
 	Success,
 	Continue,
-	Complete,
-}
+	Complete
+};
 
-const void smachPrint(SmachPrintEvent, std::string msg);
+const std::string INVALID_TRANSITION("INVALID/NOTSET");
+const std::string COMPLETED_TRANSITION("COMPLETED");
 
-class State{
+
+/**
+ *  @brief State is meant to be publicly inherited by any implemented state, should only have to override pure virtual executeState method
+ */
+class State {
 public:
+	State() {};
 
-	virtual executeState();
+	virtual Transition executeState() = 0;
+	virtual ~State() {};
 
 private:
-	std::string state_name_;
 
 }; // Class State
 
-class UserData{};
 
 
 
-class StateMachine{
+
+/**
+ * @brief StateMachine class manages transitions and states, logs progress, and prints debug messages
+ */
+class StateMachine {
 public:
-	void registerState(std::string state_name, *State state);
-	void registerTransition(Transitions transition, std::string state);
+	StateMachine();
+	void setLogFilePath(std::string fn){log_path_ = fn; };
+	void registerState(std::string state_name, State* state);
+	void registerTransition(std::string state, Transition transition, std::string dest);
 	void runStartingFromState(std::string start_state);
 
 private:
-	std::map<std::string, *State> state_map_; //< client is responsible for the state instances
+	std::map<std::string, State*> state_map_; //< client is responsible for the state instances, TODO consider smart ptrs
 	std::vector<std::string> state_names_;
+	std::map<std::string, std::map<Transition, std::string>> transition_map_;
+	std::string log_path_;
+	std::string text_file_;
+	std::string dot_file_;
+
+	bool isStateFound(std::string state);
+
 
 
 }; // Class StateMachine
