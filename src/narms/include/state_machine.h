@@ -5,8 +5,12 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <ctime>
+
 
 namespace smach {
+
+std::string getCurrentDateString();
 
 
 enum Transition {
@@ -44,7 +48,7 @@ private:
 class StateMachine {
 public:
 	StateMachine();
-	void setLogFilePath(std::string fn){log_path_ = fn; };
+	void setLogFilePath(std::string fn) {log_path_ = fn; };
 	void registerState(std::string state_name, State* state);
 	void registerTransition(std::string state, Transition transition, std::string dest);
 	void runStartingFromState(std::string start_state);
@@ -63,9 +67,6 @@ private:
 
 }; // Class StateMachine
 
-
-// instance of stateMachine at smach::stateMachine
-StateMachine stateMachine;
 
 } // ns smach
 

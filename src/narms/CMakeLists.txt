@@ -44,15 +44,14 @@ generate_messages(
     moveit_msgs
 )
 
-
 ###########
 ## Build ##
 ###########
 
-include_directories(include)
-include_directories(include/narms)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}/include
+  ${PROJECT_SOURCE_DIR}/include/narms
 )
 
 ## Declare a C++ library
