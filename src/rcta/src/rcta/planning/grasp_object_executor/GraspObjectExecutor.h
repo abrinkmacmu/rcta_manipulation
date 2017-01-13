@@ -11,7 +11,6 @@
 #include <actionlib/server/simple_action_server.h>
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/GripperCommandAction.h>
-#include <leatherman/print.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -57,6 +56,7 @@ std::string to_string(Status status);
 struct StowPosition
 {
     std::string name;
+    std::string type;
     std::map<std::string, double> joint_positions;
 };
 
@@ -118,6 +118,8 @@ private:
     std::string m_viservo_command_action_name;
     std::string m_gripper_command_action_name;
 
+    std::unique_ptr<ros::ServiceClient> m_check_state_validity_client;
+
     sbpl::VisualizerROS m_viz;
     ///@}
 
@@ -159,7 +161,7 @@ private:
 
     /// \name MoveArmToStow Parameters
     ///@{
-    std::vector<StowPosition> m_stow_positions;
+    std::vector<std::vector<StowPosition>> m_stow_sequences;
     ros::Duration m_attach_obj_req_wait;
     ///@}
 
@@ -178,8 +180,6 @@ private:
 
     /// extruded current occupancy grid
     OctomapPtr m_current_octomap;
-
-    geometry_msgs::PoseStamped m_gas_can_in_grid_frame;
 
     Eigen::Affine3d m_obj_pose;
     Eigen::Affine3d m_T_grid_model;
@@ -237,7 +237,8 @@ private:
 
     /// \name MoveArmToStowPosition State
     ///@{
-    int m_next_stow_position_to_attempt;
+    int m_next_stow_sequence;
+    int m_next_stow_position;
     ros::Time m_attach_obj_req_time;
     ///@}
 

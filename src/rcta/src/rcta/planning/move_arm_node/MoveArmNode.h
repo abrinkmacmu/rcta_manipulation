@@ -9,6 +9,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <moveit/move_group_interface/move_group.h>
 #include <moveit_msgs/Constraints.h>
 #include <moveit_msgs/MoveGroupAction.h>
 #include <moveit_msgs/RobotState.h>
@@ -41,6 +42,10 @@ private:
     ros::NodeHandle m_nh;
     ros::NodeHandle m_ph;
 
+    std::unique_ptr<move_group_interface::MoveGroup> m_move_group;
+
+    std::string m_model_frame;
+
     ros::Subscriber m_octomap_sub;
 
     typedef actionlib::SimpleActionServer<rcta::MoveArmAction> MoveArmActionServer;
@@ -54,6 +59,9 @@ private:
     double m_pos_tolerance;
     double m_rot_tolerance;
     double m_joint_tolerance;
+
+    std::string m_pose_goal_planner_id;
+    std::string m_joint_goal_planner_id;
 
     // Goal shared between plan/execute requests so that parameters inherited
     // from config don't have to be set every time.
@@ -75,11 +83,19 @@ private:
         const rcta::MoveArmGoal& goal,
         trajectory_msgs::JointTrajectory& traj);
 
+    bool planToGoalCartesian(
+        const rcta::MoveArmGoal& goal,
+        trajectory_msgs::JointTrajectory& traj);
+
     bool moveToGoalEE(
         const rcta::MoveArmGoal& goal,
         trajectory_msgs::JointTrajectory& traj);
 
     bool moveToGoalJoints(
+        const rcta::MoveArmGoal& goal,
+        trajectory_msgs::JointTrajectory& traj);
+
+    bool moveToGoalCartesian(
         const rcta::MoveArmGoal& goal,
         trajectory_msgs::JointTrajectory& traj);
 

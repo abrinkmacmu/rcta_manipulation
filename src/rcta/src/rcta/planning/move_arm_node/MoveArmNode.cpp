@@ -1,6 +1,9 @@
 #include "MoveArmNode.h"
 
-#include <sbpl_geometry_utils/utils.h>
+// system includes
+#include <eigen_conversions/eigen_msg.h>
+#include <moveit/robot_model_loader/robot_model_loader.h>
+#include <smpl/angles.h>
 #include <spellbook/msg_utils/msg_utils.h>
 #include <spellbook/geometry_msgs/geometry_msgs.h>
 
@@ -12,6 +15,8 @@ MoveArmNode::MoveArmNode() :
     m_octomap_sub(),
     m_server_name("move_arm"),
     m_move_arm_server(),
+    m_pose_goal_planner_id(),
+    m_joint_goal_planner_id(),
     m_spinner(2),
     m_octomap()
 {
@@ -21,6 +26,13 @@ MoveArmNode::MoveArmNode() :
 
 bool MoveArmNode::init()
 {
+    robot_model_loader::RobotModelLoader::Options ops;
+    ops.load_kinematics_solvers_ = false;
+    robot_model_loader::RobotModelLoader loader(ops);
+    m_model_frame = loader.getModel()->getModelFrame();
+
+    ROS_INFO("Model Frame: %s", m_model_frame.c_str());
+
     auto move_arm_callback = boost::bind(&MoveArmNode::moveArm, this, _1);
     m_move_arm_server.reset(
             new MoveArmActionServer(m_server_name, move_arm_callback, false));
@@ -33,7 +45,6 @@ bool MoveArmNode::init()
 
     // planner settings
     double allowed_planning_time;
-    std::string planner_id;
 
     // goal settings
     std::string group_name;
@@ -48,8 +59,12 @@ bool MoveArmNode::init()
     geometry_msgs::Vector3 workspace_max;
 
     m_ph.param("allowed_planning_time", allowed_planning_time, 10.0);
-    if (!m_ph.getParam("planner_id", planner_id)) {
-        ROS_ERROR("Failed to retrieve 'planner_id' from the param server");
+    if (!m_ph.getParam("pose_goal_planner_id", m_pose_goal_planner_id)) {
+        ROS_ERROR("Failed to retrieve 'pose_goal_planner_id' from the param server");
+        return false;
+    }
+    if (!m_ph.getParam("joint_goal_planner_id", m_joint_goal_planner_id)) {
+        ROS_ERROR("Failed to retrieve 'joint_goal_planner_id' from the param server");
         return false;
     }
 
@@ -57,6 +72,8 @@ bool MoveArmNode::init()
         ROS_ERROR("Failed to retrieve 'group_name' from the param server");
         return false;
     }
+    m_move_group.reset(new move_group_interface::MoveGroup(group_name));
+
     m_ph.param("pos_tolerance", pos_tolerance, 0.05);
     m_ph.param("rot_tolerance", rot_tolerance_deg, 5.0);
     m_ph.param("joint_tolerance", joint_tolerance_deg, 5.0);
@@ -76,7 +93,6 @@ bool MoveArmNode::init()
     }
 
     m_goal.request.allowed_planning_time = allowed_planning_time;
-    m_goal.request.planner_id = planner_id;
 
     m_goal.request.group_name = group_name;
 
@@ -93,15 +109,16 @@ bool MoveArmNode::init()
 
     m_tip_link = tip_link;
     m_pos_tolerance = pos_tolerance;
-    m_rot_tolerance = sbpl::utils::ToRadians(rot_tolerance_deg);
-    m_joint_tolerance = sbpl::utils::ToRadians(joint_tolerance_deg);
+    m_rot_tolerance = sbpl::angles::to_radians(rot_tolerance_deg);
+    m_joint_tolerance = sbpl::angles::to_radians(joint_tolerance_deg);
 
     m_goal.request.workspace_parameters.header.frame_id = workspace_frame;
     m_goal.request.workspace_parameters.min_corner = workspace_min;
     m_goal.request.workspace_parameters.max_corner = workspace_max;
 
     ROS_INFO("Allowed Planning Time: %0.3f", allowed_planning_time);
-    ROS_INFO("Planner ID: %s", planner_id.c_str());
+    ROS_INFO("Pose Goal Planner ID: %s", m_pose_goal_planner_id.c_str());
+    ROS_INFO("Joint Goal Planner ID: %s", m_joint_goal_planner_id.c_str());
     ROS_INFO("Group Name: %s", group_name.c_str());
     ROS_INFO("Position Tolerance (m): %0.3f", pos_tolerance);
     ROS_INFO("Rotation Tolerance (deg): %0.3f", rot_tolerance_deg);
@@ -131,16 +148,24 @@ void MoveArmNode::moveArm(const rcta::MoveArmGoal::ConstPtr& request)
     const bool execute = request->execute_path;
 
     if (request->type == rcta::MoveArmGoal::JointGoal) {
+        m_goal.request.planner_id = m_joint_goal_planner_id;
         if (execute) {
             success = moveToGoalJoints(*request, result_traj);
         } else {
             success = planToGoalJoints(*request, result_traj);
         }
     } else if (request->type == rcta::MoveArmGoal::EndEffectorGoal) {
+        m_goal.request.planner_id = m_pose_goal_planner_id;
         if (execute) {
             success = moveToGoalEE(*request, result_traj);
         } else {
             success = planToGoalEE(*request, result_traj);
+        }
+    } else if (request->type == rcta::MoveArmGoal::CartesianGoal) {
+        if (execute) {
+            success = moveToGoalCartesian(*request, result_traj);
+        } else {
+            success = planToGoalCartesian(*request, result_traj);
         }
     } else {
         ROS_ERROR("Unrecognized goal type");
@@ -209,6 +234,27 @@ bool MoveArmNode::planToGoalJoints(
     return false;
 }
 
+bool MoveArmNode::planToGoalCartesian(
+    const rcta::MoveArmGoal& goal,
+    trajectory_msgs::JointTrajectory& traj)
+{
+    assert(!goal.execute_path && goal.type == rcta::MoveArmGoal::CartesianGoal);
+    ROS_INFO("Move Along Cartesian Path");
+    std::vector<geometry_msgs::Pose> waypoints;
+    waypoints.push_back(m_move_group->getCurrentPose().pose);
+    waypoints.push_back(goal.goal_pose);
+    Eigen::Vector3d start_pos, finish_pos;
+    tf::pointMsgToEigen(waypoints.front().position, start_pos);
+    tf::pointMsgToEigen(waypoints.back().position, finish_pos);
+    double eef_step = 0.1;
+    ROS_INFO("Compute cartesian path at %0.3f meters", eef_step);
+    double jump_thresh = 2.0;
+    moveit_msgs::RobotTrajectory rtraj;
+    double pct = m_move_group->computeCartesianPath(
+            waypoints, eef_step, jump_thresh, rtraj, true, nullptr);
+    return pct >= 1.0;
+}
+
 bool MoveArmNode::moveToGoalEE(
     const rcta::MoveArmGoal& goal,
     trajectory_msgs::JointTrajectory& traj)
@@ -251,6 +297,35 @@ bool MoveArmNode::moveToGoalJoints(
         // TODO: slerp trajectory
         return true;
     }
+}
+
+bool MoveArmNode::moveToGoalCartesian(
+    const rcta::MoveArmGoal& goal,
+    trajectory_msgs::JointTrajectory& traj)
+{
+    assert(goal.execute_path && goal.type == rcta::MoveArmGoal::CartesianGoal);
+    ROS_INFO("Move Along Cartesian Path");
+    std::vector<geometry_msgs::Pose> waypoints;
+    waypoints.push_back(m_move_group->getCurrentPose().pose);
+    waypoints.push_back(goal.goal_pose);
+    Eigen::Vector3d start_pos, finish_pos;
+    tf::pointMsgToEigen(waypoints.front().position, start_pos);
+    tf::pointMsgToEigen(waypoints.back().position, finish_pos);
+    double eef_step = 0.1;
+    ROS_INFO("Compute cartesian path at %0.3f meters", eef_step);
+    double jump_thresh = 2.0;
+    moveit_msgs::RobotTrajectory rtraj;
+    double pct = m_move_group->computeCartesianPath(
+            waypoints, eef_step, jump_thresh, rtraj, true, nullptr);
+    if (pct >= 1.00) {
+        ROS_INFO("Execute Cartesian Path");
+        move_group_interface::MoveGroup::Plan plan;
+        plan.trajectory_ = rtraj;
+        auto err = m_move_group->execute(plan);
+        return err == moveit_msgs::MoveItErrorCodes::SUCCESS;
+    }
+
+    return false;
 }
 
 void MoveArmNode::fillPlanOnlyOptions(
@@ -382,9 +457,6 @@ bool MoveArmNode::sendMoveGroupConfigGoal(
     req.start_state = goal.start_state;
     req.goal_constraints.clear();
 
-    // TODO: hack! temporarily override
-    req.planner_id = "arastar.joint_distance";
-
     moveit_msgs::Constraints goal_constraints;
     goal_constraints.name = "goal_constraints";
 
@@ -408,9 +480,6 @@ bool MoveArmNode::sendMoveGroupConfigGoal(
     auto result_callback = boost::bind(
             &MoveArmNode::moveGroupResultCallback, this, _1, _2);
     m_move_group_client->sendGoal(m_goal, result_callback);
-
-    // TODO: hack! reset planner id
-    m_ph.getParam("planner_id", req.planner_id);
 
     if (!m_move_group_client->waitForResult()) {
         return false;
@@ -437,7 +506,7 @@ void MoveArmNode::octomapCallback(const octomap_msgs::Octomap::ConstPtr& msg)
 moveit_msgs::CollisionObject MoveArmNode::createGroundPlaneObject() const
 {
     moveit_msgs::CollisionObject gpo;
-    gpo.header.frame_id; // TODO: planning frame?
+    gpo.header.frame_id = m_model_frame;
 
     shape_msgs::Plane ground_plane;
     ground_plane.coef[0] = 0.0;

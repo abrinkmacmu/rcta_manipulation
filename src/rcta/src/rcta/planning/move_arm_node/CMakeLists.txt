@@ -5,7 +5,6 @@ target_link_libraries(
     ${leatherman_LIBRARIES}
     ${roscpp_LIBRARIES}
     ${smpl_LIBRARIES}
-    ${sbpl_geometry_utils_LIBRARIES}
     ${tf_LIBRARIES}
     ${urdf_LIBRARIES}
     ${urdf_parser_LIBRARIES}
@@ -28,10 +27,12 @@ target_link_libraries(
     ${eigen_conversions_LIBRARIES}
     ${leatherman_LIBRARIES}
     ${moveit_core_LIBRARIES}
+    ${moveit_ros_move_group_LIBRARIES}
+    ${moveit_ros_planning_LIBRARIES}
+    ${moveit_ros_planning_interface_LIBRARIES}
     ${roscpp_LIBRARIES}
     ${smpl_LIBRARIES}
     ${sbpl_collision_checking_LIBRARIES}
-    ${sbpl_geometry_utils_LIBRARIES}
     ${sbpl_kdl_robot_model_LIBRARIES}
     ${spellbook_ros_LIBRARIES}
     ${tf_LIBRARIES}

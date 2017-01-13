@@ -35,23 +35,6 @@
 //xytheta collision checking!
 #include "xytheta_collision_checker.h"
 
-namespace RepositionBaseCandidate {
-
-struct candidate
-{
-    int i;
-    int j;
-    int k;
-    double pTot;
-
-    bool operator<(const candidate& cand2) const
-    {
-        return pTot > cand2.pTot;
-    }
-};
-
-} // namespace RepositionBaseCandidate
-
 namespace RepositionBaseExecutionStatus {
 
 enum Status
@@ -76,9 +59,12 @@ struct Pose2D
     double x;
     double y;
     double yaw;
+
+    Pose2D() = default;
+    Pose2D(double x, double y, double yaw) : x(x), y(y), yaw(yaw) { }
 };
 
-/// \brief Describes the space of discrete poses with respect to another pose
+/// Describes the space of discrete poses with respect to another pose
 struct SearchSpaceParams
 {
     int nDist;          ///< Number of radial samples
@@ -92,6 +78,16 @@ struct SearchSpaceParams
     int nYaw;           ///< Number of relative heading samples wrt the pivot heading
     double yawMin;      ///< Minimum relative heading offset from pivot heading
     double yawStep;     ///< Discretization of yaw samples
+};
+
+/// Defines how to split the search space between the exhaustive and non-
+/// exhaustive passes
+struct SimplePruningParams
+{
+    double min_heading;
+    double max_heading;
+    double min_angle;
+    double max_angle;
 };
 
 /// Node handling requests to plan for the position of the base required to
@@ -153,6 +149,19 @@ private:
         Eigen::Affine3d link_to_marker;
     };
 
+    struct candidate
+    {
+        int i;
+        int j;
+        int k;
+        double pTot;
+
+        bool operator<(const candidate& cand2) const
+        {
+            return pTot > cand2.pTot;
+        }
+    };
+
     ros::NodeHandle nh_;
     ros::NodeHandle ph_;
 
@@ -174,7 +183,6 @@ private:
     moveit::core::JointModelGroup* manip_group_;
     std::string manip_name_;
 
-    // TODO: monitor state to get the transform between the camera and the wrist
     planning_scene_monitor::PlanningSceneMonitorPtr m_scene_monitor;
 
     std::string camera_view_frame_;
@@ -185,6 +193,8 @@ private:
 
     SearchSpaceParams m_ss;
     SearchSpaceParams m_ss_exhaustive;
+
+    SimplePruningParams m_prune_params;
 
     double m_best_dist;
     double m_best_dist_exhaustive;
@@ -214,6 +224,9 @@ private:
     int m_max_grasp_samples;
     ///@}
 
+    bool m_check_reach;
+    au::grid<3, bool> m_reachable_table;
+
     /// \name Arm Planning Constraints
     /// @{
     typedef actionlib::SimpleActionClient<rcta::MoveArmAction> MoveArmActionClient;
@@ -232,6 +245,9 @@ private:
     Eigen::Affine3d m_obj_pose;
     Eigen::Affine3d m_T_model_grid;
     Eigen::Affine3d m_T_grid_model;
+
+    // 0 -> model frame, 1 -> object frame, 2 -> grid frame
+    int m_cand_frame_option;
 
     /// \name Initialization
     ///@{
@@ -267,6 +283,7 @@ private:
         double z = 0.0, double R = 0.0, double P = 0.0) const;
 
     Pose2D poseEigen3ToSimpleGascan(const Eigen::Affine3d& object_pose) const;
+    Eigen::Affine3d poseSimpleGascanToEigen3(const Pose2D& object_pose) const;
     ///@}
 
     /// \name Grasp Candidate Selection
@@ -331,6 +348,12 @@ private:
         const au::grid<3, Pose2D>& rob,
         au::grid<3, bool>& bTotMax);
 
+    void pruneUnreachingStates(
+        const SearchSpaceParams& ss,
+        const au::grid<3, Pose2D>& rob,
+        const Pose2D& obj,
+        au::grid<3, bool>& bTotMax);
+
     void computeArmCollisionProbabilities(
         const SearchSpaceParams& ss,
         const au::grid<3, Pose2D>& rob,
@@ -349,7 +372,7 @@ private:
         const au::grid<3, bool>& b,
         au::grid<3, double>& p);
 
-    int checkIK(
+    bool checkIK(
         const Eigen::Affine3d& robot_pose,
         const Eigen::Affine3d& object_pose);
 
@@ -371,7 +394,7 @@ private:
         const SearchSpaceParams& ss,
         const au::grid<3, bool>& bTotMax,
         const au::grid<3, double>& pTot,
-        std::vector<RepositionBaseCandidate::candidate>& cands);
+        std::vector<candidate>& cands);
     ///@}
 
     ///\name Debug Visualization
@@ -415,10 +438,16 @@ private:
         int hue,
         const std::string& ns,
         int& id) const;
+
+    std_msgs::ColorRGBA rainbow(double d) const;
     ///@}
 
     void goalCallback();
     void preemptCallback();
+
+    void transformToOutputFrame(
+            const Eigen::Affine3d& in,
+            geometry_msgs::PoseStamped& out) const;
 
     uint8_t execution_status_to_feedback_status(
         RepositionBaseExecutionStatus::Status status);
@@ -426,9 +455,6 @@ private:
     void move_arm_command_result_cb(
         const actionlib::SimpleClientGoalState& state,
         const rcta::MoveArmResult::ConstPtr& result);
-
-    void aMetricIDontHaveTimeToMaintain();
-    void anotherMetricIDontHaveTimeToMaintain();
 };
 
 #endif
