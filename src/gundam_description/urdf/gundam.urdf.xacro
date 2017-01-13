@@ -166,12 +166,12 @@
 
     <xacro:arg name="namespace" default="false" />
 
-    <xacro:include filename="$(find roman_model)/urdf/talon.urdf.xacro"/>
-    <xacro:include filename="$(find roman_model)/urdf/roman_body.urdf.xacro"/>
+    <xacro:include filename="$(find gundam_description)/urdf/talon.urdf.xacro"/>
+    <xacro:include filename="$(find gundam_description)/urdf/roman_body.urdf.xacro"/>
     <!-- Note: using joint limited (-1.57, 1.57) robosimian arm model -->
-    <xacro:include filename="$(find roman_model)/urdf/robosimian_arm_joint_limited.urdf.xacro"/>
+    <xacro:include filename="$(find gundam_description)/urdf/robosimian_arm_joint_limited.urdf.xacro"/>
 
-    <xacro:include filename="$(find roman_model)/gazebo/gazebo.urdf.xacro"/>
+    <xacro:include filename="$(find gundam_description)/gazebo/gazebo.urdf.xacro"/>
 
     <xacro:talon name="base" namespace="$(arg namespace)" prefix="roman/"/>
     
